@@ -1,0 +1,16 @@
+{
+  "crons": [
+    {
+      "path": "/api/sync-data",
+      "schedule": "*/5 * * * *"
+    }
+  ],
+  "functions": {
+    "app/api/grok-chat/route.ts": {
+      "maxDuration": 30
+    },
+    "app/api/sync-data/route.ts": {
+      "maxDuration": 60
+    }
+  }
+}
