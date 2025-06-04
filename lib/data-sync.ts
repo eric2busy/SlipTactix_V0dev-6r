@@ -115,6 +115,54 @@ export class DataSyncService {
     }
   }
 
+  // Quick sync for external cron services (under 10 seconds)
+  async performQuickSync() {
+    try {
+      console.log("Performing quick data sync...")
+
+      // Only sync the most critical data to stay under 10 seconds
+      const results = await Promise.allSettled([
+        this.syncProps(5), // Limit to 5 props for speed
+        this.syncGames(3), // Limit to 3 games for speed
+      ])
+
+      const [propsResult, gamesResult] = results
+
+      const errors: string[] = []
+      let props = 0,
+        games = 0
+
+      if (propsResult.status === "fulfilled") {
+        props = propsResult.value
+      } else {
+        console.error("Props sync failed:", propsResult.reason)
+        errors.push(`Props: ${propsResult.reason.message || "Unknown error"}`)
+      }
+
+      if (gamesResult.status === "fulfilled") {
+        games = gamesResult.value
+      } else {
+        console.error("Games sync failed:", gamesResult.reason)
+        errors.push(`Games: ${gamesResult.reason.message || "Unknown error"}`)
+      }
+
+      console.log(`Quick sync completed: ${props} props, ${games} games`)
+
+      // Update last sync time
+      this.lastSyncTime["NBA"] = Date.now()
+
+      return { props, games, errors, type: "quick" }
+    } catch (error) {
+      console.error("Error in quick sync:", error)
+      return {
+        props: 0,
+        games: 0,
+        errors: [error instanceof Error ? error.message : "Unknown error"],
+        type: "quick",
+      }
+    }
+  }
+
   async performFullSync() {
     try {
       console.log("Performing full data sync...")
@@ -171,7 +219,7 @@ export class DataSyncService {
       // Update last sync time
       this.lastSyncTime["NBA"] = Date.now()
 
-      return { props, games, injuries, news, errors }
+      return { props, games, injuries, news, errors, type: "full" }
     } catch (error) {
       console.error("Error in full sync:", error)
       return {
@@ -180,16 +228,19 @@ export class DataSyncService {
         injuries: 0,
         news: 0,
         errors: [error instanceof Error ? error.message : "Unknown error"],
+        type: "full",
       }
     }
   }
 
-  async syncProps(): Promise<number> {
+  async syncProps(limit?: number): Promise<number> {
     try {
       const props = await prizePicksScraper.getActiveProps("NBA")
       let syncedCount = 0
 
-      for (const prop of props) {
+      const propsToSync = limit ? props.slice(0, limit) : props
+
+      for (const prop of propsToSync) {
         const { error } = await supabase.from("props").upsert(
           {
             id: prop.id,
@@ -214,11 +265,13 @@ export class DataSyncService {
         if (!error) syncedCount++
       }
 
-      // Mark old props as inactive
-      await supabase
-        .from("props")
-        .update({ is_active: false })
-        .lt("updated_at", new Date(Date.now() - 10 * 60 * 1000).toISOString())
+      // Mark old props as inactive (only in full sync)
+      if (!limit) {
+        await supabase
+          .from("props")
+          .update({ is_active: false })
+          .lt("updated_at", new Date(Date.now() - 10 * 60 * 1000).toISOString())
+      }
 
       return syncedCount
     } catch (error) {
@@ -227,12 +280,14 @@ export class DataSyncService {
     }
   }
 
-  async syncGames(): Promise<number> {
+  async syncGames(limit?: number): Promise<number> {
     try {
       const games = await sportsAPI.getLiveGames()
       let syncedCount = 0
 
-      for (const game of games) {
+      const gamesToSync = limit ? games.slice(0, limit) : games
+
+      for (const game of gamesToSync) {
         const { error } = await supabase.from("games").upsert(
           {
             id: game.id,
