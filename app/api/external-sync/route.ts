@@ -4,14 +4,8 @@ import { dataSyncService } from "@/lib/data-sync"
 // This endpoint will be called by external cron services
 export async function GET(request: Request) {
   try {
-    // Optional: Add simple authentication to prevent abuse
-    const { searchParams } = new URL(request.url)
-    const token = searchParams.get("token")
-
-    // Simple token check (optional)
-    if (process.env.SYNC_TOKEN && token !== process.env.SYNC_TOKEN) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    }
+    // Authentication disabled as requested
+    console.log("External sync triggered - auth disabled")
 
     console.log("External sync triggered")
 
