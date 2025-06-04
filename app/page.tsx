@@ -1259,9 +1259,9 @@ export default function ChatInterface() {
   }
 
   return (
-    <div className="flex flex-col h-screen bg-black text-white">
+    <div className="flex flex-col h-screen bg-black text-white safe-area-inset">
       {/* Header */}
-      <header className="flex justify-between items-center p-4 border-b border-gray-800">
+      <header className="flex justify-between items-center p-4 border-b border-gray-800 pt-safe">
         <div className="flex items-center gap-3">
           <div className="h-8">
             <Image
@@ -1469,7 +1469,7 @@ export default function ChatInterface() {
         )}
 
         {/* Input Area */}
-        <div className="p-4 border-t border-gray-800">
+        <div className="p-4 border-t border-gray-800 pb-safe">
           <div className="relative flex items-center">
             <input
               type="text"
