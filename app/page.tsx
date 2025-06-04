@@ -155,58 +155,62 @@ export default function ChatInterface() {
   const [expandedQuickChat, setExpandedQuickChat] = useState(false)
   const [showCategoryDropdown, setShowCategoryDropdown] = useState(false)
 
-  // Convert real-time data to component format
-  const liveGames =
-    realTimeData?.games?.map((game: any) => ({
-      id: game.id,
-      homeTeam: game.home_team,
-      awayTeam: game.away_team,
-      homeScore: game.home_score,
-      awayScore: game.away_score,
-      quarter: game.quarter,
-      timeRemaining: game.time_remaining,
-      homeOdds: game.home_odds,
-      awayOdds: game.away_odds,
-      startTime: game.start_time,
-      date: game.game_date,
-      status: game.status,
-    })) || []
+  // Convert real-time data to component format with proper null checks
+  const liveGames = Array.isArray(realTimeData?.games)
+    ? realTimeData.games.map((game: any) => ({
+        id: game?.id || `game-${Math.random()}`,
+        homeTeam: game?.home_team || "HOME",
+        awayTeam: game?.away_team || "AWAY",
+        homeScore: Number(game?.home_score) || 0,
+        awayScore: Number(game?.away_score) || 0,
+        quarter: game?.quarter || "",
+        timeRemaining: game?.time_remaining || "",
+        homeOdds: game?.home_odds || "",
+        awayOdds: game?.away_odds || "",
+        startTime: game?.start_time || "",
+        date: game?.game_date || new Date().toISOString().split("T")[0],
+        status: game?.status || "scheduled",
+      }))
+    : []
 
-  const trendingProps =
-    realTimeData?.props?.map((prop: any) => ({
-      id: prop.id,
-      player: prop.player_name,
-      team: prop.team,
-      prop: prop.prop_type,
-      line: prop.line?.toString(),
-      odds: prop.odds,
-      confidence: prop.confidence,
-      trend: prop.trend,
-      analysis: prop.analysis,
-    })) || []
+  const trendingProps = Array.isArray(realTimeData?.props)
+    ? realTimeData.props.map((prop: any) => ({
+        id: prop?.id || `prop-${Math.random()}`,
+        player: prop?.player_name || prop?.player || "Unknown Player",
+        team: prop?.team || "UNK",
+        prop: prop?.prop_type || prop?.prop || "Points",
+        line: prop?.line?.toString() || "0",
+        odds: prop?.odds || "Pick",
+        confidence: Number(prop?.confidence) || 50,
+        trend: prop?.trend || "neutral",
+        analysis: prop?.analysis || "No analysis available",
+      }))
+    : []
 
-  const injuries =
-    realTimeData?.injuries?.map((injury: any) => ({
-      id: injury.id,
-      playerName: injury.player_name,
-      team: injury.team,
-      status: injury.status,
-      injury: injury.injury_type,
-      notes: injury.notes,
-      updated: new Date(injury.updated_at).toLocaleString(),
-    })) || []
+  const injuries = Array.isArray(realTimeData?.injuries)
+    ? realTimeData.injuries.map((injury: any) => ({
+        id: injury?.id || `injury-${Math.random()}`,
+        playerName: injury?.player_name || injury?.playerName || "Unknown Player",
+        team: injury?.team || "UNK",
+        status: injury?.status || "Questionable",
+        injury: injury?.injury_type || injury?.injury || "Unknown",
+        notes: injury?.notes || "No details available",
+        updated: injury?.updated_at ? new Date(injury.updated_at).toLocaleString() : "Unknown",
+      }))
+    : []
 
-  const newsItems =
-    realTimeData?.news?.map((item: any) => ({
-      id: item.id,
-      title: item.title,
-      content: item.content,
-      source: item.source,
-      date: item.published_date,
-      impact: item.impact,
-      playerName: item.player_name,
-      teamName: item.team_name,
-    })) || []
+  const newsItems = Array.isArray(realTimeData?.news)
+    ? realTimeData.news.map((item: any) => ({
+        id: item?.id || `news-${Math.random()}`,
+        title: item?.title || "News Update",
+        content: item?.content || "No content available",
+        source: item?.source || "Unknown",
+        date: item?.published_date || item?.date || new Date().toISOString(),
+        impact: item?.impact || "neutral",
+        playerName: item?.player_name || item?.playerName || "",
+        teamName: item?.team_name || item?.teamName || "",
+      }))
+    : []
 
   // Quick chat options organized by category
   const quickChatOptions: Record<QuickChatCategory, string[]> = {
@@ -322,12 +326,12 @@ export default function ChatInterface() {
   const handleSendMessage = async (manualMessage?: string) => {
     const messageToSend = manualMessage || inputValue
 
-    if ((!messageToSend.trim() || isProcessing) && !manualMessage) return
+    if ((!messageToSend?.trim() || isProcessing) && !manualMessage) return
 
     setIsProcessing(true)
     const newUserMessage: Message = {
       id: Date.now().toString(),
-      content: messageToSend,
+      content: messageToSend || "",
       sender: "user",
       timestamp: new Date(),
     }
@@ -347,8 +351,11 @@ export default function ChatInterface() {
 
       setMessages((prev) => [...prev, typingMessage])
 
+      // Safe string operations with null checks
+      const messageLower = messageToSend?.toLowerCase() || ""
+
       // Special commands for showing games and value props using real data
-      if (messageToSend.toLowerCase().includes("live") || messageToSend.toLowerCase().includes("score")) {
+      if (messageLower.includes("live") || messageLower.includes("score")) {
         setMessages((prev) => prev.filter((m) => m.id !== "typing"))
 
         setMessages((prev) => [
@@ -368,7 +375,7 @@ export default function ChatInterface() {
         return
       }
 
-      if (messageToSend.toLowerCase().includes("upcoming games")) {
+      if (messageLower.includes("upcoming games")) {
         setMessages((prev) => prev.filter((m) => m.id !== "typing"))
 
         setMessages((prev) => [
@@ -388,7 +395,7 @@ export default function ChatInterface() {
         return
       }
 
-      if (messageToSend.toLowerCase().includes("injury") || messageToSend.toLowerCase().includes("injuries")) {
+      if (messageLower.includes("injury") || messageLower.includes("injuries")) {
         setMessages((prev) => prev.filter((m) => m.id !== "typing"))
 
         setMessages((prev) => [
@@ -408,7 +415,7 @@ export default function ChatInterface() {
         return
       }
 
-      if (messageToSend.toLowerCase().includes("news") || messageToSend.toLowerCase().includes("updates")) {
+      if (messageLower.includes("news") || messageLower.includes("updates")) {
         setMessages((prev) => prev.filter((m) => m.id !== "typing"))
 
         setMessages((prev) => [
@@ -428,7 +435,7 @@ export default function ChatInterface() {
         return
       }
 
-      if (messageToSend.toLowerCase().includes("trending props") || messageToSend.toLowerCase().includes("top props")) {
+      if (messageLower.includes("trending props") || messageLower.includes("top props")) {
         setMessages((prev) => prev.filter((m) => m.id !== "typing"))
 
         setMessages((prev) => [
@@ -448,7 +455,7 @@ export default function ChatInterface() {
         return
       }
 
-      if (messageToSend.toLowerCase().includes("build") && messageToSend.toLowerCase().includes("parlay")) {
+      if (messageLower.includes("build") && messageLower.includes("parlay")) {
         setMessages((prev) => prev.filter((m) => m.id !== "typing"))
 
         setMessages((prev) => [
@@ -472,9 +479,8 @@ export default function ChatInterface() {
       }
 
       if (
-        messageToSend.toLowerCase().includes("saved") ||
-        (messageToSend.toLowerCase().includes("my") &&
-          (messageToSend.toLowerCase().includes("props") || messageToSend.toLowerCase().includes("favorites")))
+        messageLower.includes("saved") ||
+        (messageLower.includes("my") && (messageLower.includes("props") || messageLower.includes("favorites")))
       ) {
         setMessages((prev) => prev.filter((m) => m.id !== "typing"))
 
@@ -497,9 +503,9 @@ export default function ChatInterface() {
 
       // Handle value plays with real data
       if (
-        messageToSend.toLowerCase().includes("value plays") ||
-        messageToSend.toLowerCase().includes("best picks") ||
-        messageToSend.toLowerCase().includes("best props")
+        messageLower.includes("value plays") ||
+        messageLower.includes("best picks") ||
+        messageLower.includes("best props")
       ) {
         setMessages((prev) => prev.filter((m) => m.id !== "typing"))
 
@@ -777,21 +783,21 @@ export default function ChatInterface() {
               <div className="h-12 w-12 rounded-full bg-gray-700 overflow-hidden">
                 <Image
                   src={`https://cdn.nba.com/headshots/nba/latest/1040x760/${Math.floor(Math.random() * 1000) + 1000}.png`}
-                  alt={message.data.playerName}
+                  alt={message.data?.playerName || "Player"}
                   width={48}
                   height={48}
                   className="object-cover"
                 />
               </div>
               <div>
-                <h3 className="font-bold">{message.data.playerName}</h3>
+                <h3 className="font-bold">{message.data?.playerName || "Unknown Player"}</h3>
                 <p className="text-sm text-gray-400">LAL • SF</p>
               </div>
             </div>
             <Button
               size="sm"
               className="mt-2 w-full bg-[#b8562f] hover:bg-[#c96a43]"
-              onClick={() => handlePlayerCardClick(message.data.playerName)}
+              onClick={() => handlePlayerCardClick(message.data?.playerName || "Unknown Player")}
             >
               <BarChart2 className="w-4 h-4 mr-2" />
               View Detailed Analysis
@@ -809,22 +815,24 @@ export default function ChatInterface() {
             <div className="flex justify-between items-center">
               <div className="flex items-center gap-2">
                 <div className="h-10 w-10 rounded-full bg-blue-600 flex items-center justify-center">
-                  <span className="font-bold text-sm">{message.data.teams[0]}</span>
+                  <span className="font-bold text-sm">{message.data?.teams?.[0] || "T1"}</span>
                 </div>
-                <span className="font-medium">{message.data.teams[0]}</span>
+                <span className="font-medium">{message.data?.teams?.[0] || "Team 1"}</span>
               </div>
               <span className="text-sm">VS</span>
               <div className="flex items-center gap-2">
-                <span className="font-medium">{message.data.teams[1]}</span>
+                <span className="font-medium">{message.data?.teams?.[1] || "Team 2"}</span>
                 <div className="h-10 w-10 rounded-full bg-red-600 flex items-center justify-center">
-                  <span className="font-bold text-sm">{message.data.teams[1]}</span>
+                  <span className="font-bold text-sm">{message.data?.teams?.[1] || "T2"}</span>
                 </div>
               </div>
             </div>
             <Button
               size="sm"
               className="mt-3 w-full bg-[#b8562f] hover:bg-[#c96a43]"
-              onClick={() => handleGameClick(`${message.data.teams[0]}_${message.data.teams[1]}`)}
+              onClick={() =>
+                handleGameClick(`${message.data?.teams?.[0] || "team1"}_${message.data?.teams?.[1] || "team2"}`)
+              }
             >
               <BarChart2 className="w-4 h-4 mr-2" />
               View Matchup Analysis
@@ -839,7 +847,7 @@ export default function ChatInterface() {
         <div className="flex flex-col space-y-2">
           <p>{message.content}</p>
           <div className="space-y-3 mt-2">
-            {message.data.recommendations.map((rec: BetRecommendation) => (
+            {(message.data?.recommendations || []).map((rec: BetRecommendation) => (
               <motion.div
                 key={rec.id}
                 initial={{ opacity: 0, y: 10 }}
@@ -858,10 +866,10 @@ export default function ChatInterface() {
                       <span className="text-gray-300">{rec.prop}</span>
                       <span className="mx-1">|</span>
                       <span className="font-medium">
-                        {rec.line} {rec.prop.includes("Points") ? "pts" : rec.prop.includes("Rebounds") ? "reb" : ""}
+                        {rec.line} {rec.prop?.includes("Points") ? "pts" : rec.prop?.includes("Rebounds") ? "reb" : ""}
                       </span>
                       <span className="mx-1">|</span>
-                      <span className={rec.odds.includes("+") ? "text-[#54c863]" : "text-gray-300"}>{rec.odds}</span>
+                      <span className={rec.odds?.includes("+") ? "text-[#54c863]" : "text-gray-300"}>{rec.odds}</span>
                     </div>
                   </div>
                   <div className="flex flex-col items-end">
@@ -966,7 +974,7 @@ export default function ChatInterface() {
         <div className="flex flex-col space-y-2">
           <p>{message.content}</p>
           <div className="space-y-3 mt-2">
-            {message.data.games.map((game: Game) => (
+            {(message.data?.games || []).map((game: Game) => (
               <LiveGameCard key={game.id} game={game} onClick={() => handleGameClick(game.id)} />
             ))}
           </div>
@@ -995,7 +1003,7 @@ export default function ChatInterface() {
         <div className="flex flex-col space-y-2">
           <p>{message.content}</p>
           <div className="space-y-3 mt-2">
-            {message.data.injuries.map((injury: Injury) => (
+            {(message.data?.injuries || []).map((injury: Injury) => (
               <div key={injury.id} className="bg-gray-800 rounded-lg p-3 border border-gray-700">
                 <div className="flex justify-between items-start">
                   <div>
@@ -1052,7 +1060,7 @@ export default function ChatInterface() {
         <div className="flex flex-col space-y-2">
           <p>{message.content}</p>
           <div className="space-y-3 mt-2">
-            {message.data.news.map((item: News) => (
+            {(message.data?.news || []).map((item: News) => (
               <div key={item.id} className="bg-gray-800 rounded-lg p-3 border border-gray-700">
                 <div className="flex justify-between items-start">
                   <div className="font-bold">{item.title}</div>
@@ -1101,7 +1109,7 @@ export default function ChatInterface() {
         <div className="flex flex-col space-y-2">
           <p>{message.content}</p>
           <div className="space-y-3 mt-2">
-            {message.data.props.slice(0, 4).map((prop: BetRecommendation) => (
+            {(message.data?.props || []).slice(0, 4).map((prop: BetRecommendation) => (
               <motion.div
                 key={prop.id}
                 initial={{ opacity: 0, y: 10 }}
@@ -1120,10 +1128,11 @@ export default function ChatInterface() {
                       <span className="text-gray-300">{prop.prop}</span>
                       <span className="mx-1">|</span>
                       <span className="font-medium">
-                        {prop.line} {prop.prop.includes("Points") ? "pts" : prop.prop.includes("Rebounds") ? "reb" : ""}
+                        {prop.line}{" "}
+                        {prop.prop?.includes("Points") ? "pts" : prop.prop?.includes("Rebounds") ? "reb" : ""}
                       </span>
                       <span className="mx-1">|</span>
-                      <span className={prop.odds.includes("+") ? "text-[#54c863]" : "text-gray-300"}>{prop.odds}</span>
+                      <span className={prop.odds?.includes("+") ? "text-[#54c863]" : "text-gray-300"}>{prop.odds}</span>
                     </div>
                   </div>
                   <div className="flex flex-col items-end">
@@ -1201,11 +1210,11 @@ export default function ChatInterface() {
           <div className="bg-gray-800 rounded-lg p-4 border border-gray-700 mt-2">
             <div className="flex justify-between items-center mb-3">
               <h3 className="font-bold text-lg">3-Leg Parlay</h3>
-              <Badge className="bg-[#b8562f]">+{message.data.odds}</Badge>
+              <Badge className="bg-[#b8562f]">+{message.data?.odds || "650"}</Badge>
             </div>
 
             <div className="space-y-3">
-              {message.data.legs.map((leg: BetRecommendation, index: number) => (
+              {(message.data?.legs || []).map((leg: BetRecommendation, index: number) => (
                 <div key={leg.id} className="flex justify-between items-center p-2 bg-gray-700 rounded">
                   <div>
                     <div className="font-medium">{leg.player}</div>
@@ -1227,11 +1236,11 @@ export default function ChatInterface() {
             <div className="mt-4 grid grid-cols-2 gap-3 text-center text-sm">
               <div className="bg-gray-700 p-2 rounded">
                 <div className="text-gray-400">Win Probability</div>
-                <div className="font-bold">{message.data.winProbability}</div>
+                <div className="font-bold">{message.data?.winProbability || "18%"}</div>
               </div>
               <div className="bg-gray-700 p-2 rounded">
                 <div className="text-gray-400">Expected Value</div>
-                <div className="font-bold text-green-500">{message.data.expectedValue}</div>
+                <div className="font-bold text-green-500">{message.data?.expectedValue || "Positive"}</div>
               </div>
             </div>
 
@@ -1239,7 +1248,7 @@ export default function ChatInterface() {
               <Button
                 className="flex-1 bg-[#b8562f] hover:bg-[#c96a43]"
                 onClick={() => {
-                  message.data.legs.forEach((leg: BetRecommendation) => {
+                  ;(message.data?.legs || []).forEach((leg: BetRecommendation) => {
                     addToPropsList(leg)
                   })
                 }}
@@ -1488,7 +1497,7 @@ export default function ChatInterface() {
               className="w-full bg-gray-800 rounded-full py-3 px-4 pr-12 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#b8562f] transition-shadow"
             />
             <button
-              onClick={handleSendMessage}
+              onClick={() => handleSendMessage()}
               className="absolute right-3 bg-[#b8562f] hover:bg-[#c96a43] rounded-full p-2 transition-colors"
               aria-label="Send"
             >
@@ -1663,10 +1672,11 @@ export default function ChatInterface() {
                       <span className="text-gray-300">{prop.prop}</span>
                       <span className="mx-1">|</span>
                       <span className="font-medium">
-                        {prop.line} {prop.prop.includes("Points") ? "pts" : prop.prop.includes("Rebounds") ? "reb" : ""}
+                        {prop.line}{" "}
+                        {prop.prop?.includes("Points") ? "pts" : prop.prop?.includes("Rebounds") ? "reb" : ""}
                       </span>
                       <span className="mx-1">|</span>
-                      <span className={prop.odds.includes("+") ? "text-[#54c863]" : "text-gray-300"}>{prop.odds}</span>
+                      <span className={prop.odds?.includes("+") ? "text-[#54c863]" : "text-gray-300"}>{prop.odds}</span>
                     </div>
                   </div>
                   <div className="flex flex-col items-end">

@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server"
-import { headers } from "next/headers"
-import { dataSyncService } from "@/lib/data-sync"
+import { sportsAPI } from "@/lib/sports-api"
+import { prizePicksScraper } from "@/lib/prizepicks-scraper"
 
-// Define response interfaces for type safety
 interface ResponseData {
   props: any[]
   games: any[]
@@ -15,131 +14,124 @@ interface ApiResponse {
   data: ResponseData
   timestamp: string
   errors?: string[]
+  source: string
+  debug?: any
 }
 
 export async function GET(request: Request): Promise<NextResponse<ApiResponse>> {
   try {
-    console.log("Real-time data API called")
+    console.log("🚀 ENHANCED LIVE DATA API - Using robust fallback system")
 
     const { searchParams } = new URL(request.url)
     const type = searchParams.get("type") || "all"
     const sport = searchParams.get("sport") || "NBA"
 
-    // Input validation
-    const validTypes = ["props", "games", "injuries", "news", "all"]
-    const validSports = ["NBA", "NFL", "MLB"]
+    console.log(`🎯 Fetching ${type} data for ${sport} with enhanced error handling`)
 
-    if (!validTypes.includes(type)) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: `Invalid type. Must be one of: ${validTypes.join(", ")}`,
-          data: { props: [], games: [], injuries: [], news: [] },
-          timestamp: new Date().toISOString(),
-        } as ApiResponse,
-        { status: 400 },
-      )
-    }
-
-    if (!validSports.includes(sport)) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: `Invalid sport. Must be one of: ${validSports.join(", ")}`,
-          data: { props: [], games: [], injuries: [], news: [] },
-          timestamp: new Date().toISOString(),
-        } as ApiResponse,
-        { status: 400 },
-      )
-    }
-
-    console.log(`Fetching ${type} data for ${sport}`)
-
-    // Check if sync is needed (only if data is stale)
-    if (await dataSyncService.isDataStale(sport)) {
-      console.log("Database is stale, performing sync...")
-      await dataSyncService.performFullSync()
-    }
-
-    // Initialize consistent response structure
+    // Initialize response structure
     const data: ResponseData = { props: [], games: [], injuries: [], news: [] }
     const errors: string[] = []
+    const debug: any = { attempts: [], fallbacks: [] }
 
+    // Enhanced data fetching with proper error handling
     switch (type) {
       case "props":
         try {
-          data.props = await dataSyncService.getLatestProps(sport)
+          console.log("📊 Fetching enhanced props...")
+          data.props = await prizePicksScraper.getActiveProps(sport)
+          console.log(`✅ Got ${data.props.length} enhanced props`)
+          debug.attempts.push({ type: "props", success: true, count: data.props.length })
         } catch (error) {
-          console.error("Error fetching props:", error)
+          console.error("❌ Error fetching props:", error)
           errors.push(`Props: ${error instanceof Error ? error.message : "Unknown error"}`)
+          debug.attempts.push({ type: "props", success: false, error: error.message })
         }
         break
+
       case "games":
         try {
-          data.games = await dataSyncService.getLatestGames(sport)
+          console.log("🏀 Fetching enhanced games...")
+          data.games = await sportsAPI.getLiveGames()
+          console.log(`✅ Got ${data.games.length} enhanced games`)
+          debug.attempts.push({ type: "games", success: true, count: data.games.length })
         } catch (error) {
-          console.error("Error fetching games:", error)
+          console.error("❌ Error fetching games:", error)
           errors.push(`Games: ${error instanceof Error ? error.message : "Unknown error"}`)
+          debug.attempts.push({ type: "games", success: false, error: error.message })
         }
         break
+
       case "injuries":
         try {
-          data.injuries = await dataSyncService.getLatestInjuries(sport)
+          console.log("🏥 Fetching enhanced injuries...")
+          data.injuries = await sportsAPI.getInjuryReport()
+          console.log(`✅ Got ${data.injuries.length} enhanced injuries`)
+          debug.attempts.push({ type: "injuries", success: true, count: data.injuries.length })
         } catch (error) {
-          console.error("Error fetching injuries:", error)
+          console.error("❌ Error fetching injuries:", error)
           errors.push(`Injuries: ${error instanceof Error ? error.message : "Unknown error"}`)
+          debug.attempts.push({ type: "injuries", success: false, error: error.message })
         }
         break
+
       case "news":
         try {
-          data.news = await dataSyncService.getLatestNews(sport)
+          console.log("📰 Fetching enhanced news...")
+          data.news = await sportsAPI.getNews()
+          console.log(`✅ Got ${data.news.length} enhanced news`)
+          debug.attempts.push({ type: "news", success: true, count: data.news.length })
         } catch (error) {
-          console.error("Error fetching news:", error)
+          console.error("❌ Error fetching news:", error)
           errors.push(`News: ${error instanceof Error ? error.message : "Unknown error"}`)
+          debug.attempts.push({ type: "news", success: false, error: error.message })
         }
         break
+
       default:
-        // Get all data with proper error handling
-        console.log("Fetching all data types...")
-        const results = await Promise.allSettled([
-          dataSyncService.getLatestProps(sport),
-          dataSyncService.getLatestGames(sport),
-          dataSyncService.getLatestInjuries(sport),
-          dataSyncService.getLatestNews(sport),
-        ])
+        // Get ALL enhanced data with individual error handling
+        console.log("🔄 Fetching ALL enhanced data types...")
 
-        const [propsResult, gamesResult, injuriesResult, newsResult] = results
+        const dataPromises = [
+          { name: "props", promise: prizePicksScraper.getActiveProps(sport) },
+          { name: "games", promise: sportsAPI.getLiveGames() },
+          { name: "injuries", promise: sportsAPI.getInjuryReport() },
+          { name: "news", promise: sportsAPI.getNews() },
+        ]
 
-        if (propsResult.status === "fulfilled") {
-          data.props = propsResult.value
-        } else {
-          console.error("Props fetch failed:", propsResult.reason)
-          errors.push(`Props: ${propsResult.reason.message || "Unknown error"}`)
-        }
-
-        if (gamesResult.status === "fulfilled") {
-          data.games = gamesResult.value
-        } else {
-          console.error("Games fetch failed:", gamesResult.reason)
-          errors.push(`Games: ${gamesResult.reason.message || "Unknown error"}`)
-        }
-
-        if (injuriesResult.status === "fulfilled") {
-          data.injuries = injuriesResult.value
-        } else {
-          console.error("Injuries fetch failed:", injuriesResult.reason)
-          errors.push(`Injuries: ${injuriesResult.reason.message || "Unknown error"}`)
-        }
-
-        if (newsResult.status === "fulfilled") {
-          data.news = newsResult.value
-        } else {
-          console.error("News fetch failed:", newsResult.reason)
-          errors.push(`News: ${newsResult.reason.message || "Unknown error"}`)
+        for (const { name, promise } of dataPromises) {
+          try {
+            const result = await promise
+            data[name as keyof ResponseData] = result
+            console.log(`✅ Enhanced ${name}: ${result.length}`)
+            debug.attempts.push({ type: name, success: true, count: result.length })
+          } catch (error) {
+            console.error(`❌ Enhanced ${name} failed:`, error)
+            errors.push(`${name}: ${error instanceof Error ? error.message : "Unknown error"}`)
+            debug.attempts.push({ type: name, success: false, error: error.message })
+          }
         }
     }
 
-    console.log("Data fetched successfully:", {
+    // Log sample data to verify quality
+    if (data.props.length > 0) {
+      console.log("📈 Sample enhanced prop:", {
+        player: data.props[0]?.player,
+        prop: data.props[0]?.prop,
+        line: data.props[0]?.line,
+        confidence: data.props[0]?.confidence,
+        source: data.props[0]?.source,
+      })
+    }
+
+    if (data.games.length > 0) {
+      console.log("🏀 Sample enhanced game:", {
+        matchup: `${data.games[0]?.awayTeam} @ ${data.games[0]?.homeTeam}`,
+        status: data.games[0]?.status,
+        source: data.games[0]?.source,
+      })
+    }
+
+    console.log("📈 Final enhanced data counts:", {
       props: data.props?.length || 0,
       games: data.games?.length || 0,
       injuries: data.injuries?.length || 0,
@@ -150,21 +142,23 @@ export async function GET(request: Request): Promise<NextResponse<ApiResponse>> 
       success: true,
       data,
       timestamp: new Date().toISOString(),
+      source: "enhanced-robust-system",
+      debug,
     }
 
     if (errors.length > 0) {
       response.errors = errors
-      console.warn("Partial data fetch failure:", errors)
+      console.warn("⚠️ Some data sources had issues (using fallbacks):", errors)
     }
 
     return NextResponse.json(response)
   } catch (error) {
-    console.error("Error in real-time-data API:", error)
+    console.error("💥 Critical error in enhanced data API:", error)
 
     return NextResponse.json(
       {
         success: false,
-        error: "Failed to fetch real-time data",
+        error: "Enhanced data system temporarily unavailable",
         message: error instanceof Error ? error.message : "Unknown error",
         data: {
           props: [],
@@ -173,6 +167,7 @@ export async function GET(request: Request): Promise<NextResponse<ApiResponse>> 
           news: [],
         },
         timestamp: new Date().toISOString(),
+        source: "error-fallback",
       } as ApiResponse,
       { status: 500 },
     )
@@ -181,34 +176,34 @@ export async function GET(request: Request): Promise<NextResponse<ApiResponse>> 
 
 export async function POST(): Promise<NextResponse> {
   try {
-    // Optional authentication - only check if SYNC_API_KEY is set
-    const headersList = headers()
-    const apiKey = headersList.get("x-api-key")
-    const requiredKey = process.env.SYNC_API_KEY
+    console.log("🔄 Manual enhanced data refresh triggered")
 
-    if (requiredKey && apiKey !== requiredKey) {
-      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 })
+    const [gamesSync, propsSync] = await Promise.allSettled([
+      sportsAPI.getLiveGames(),
+      prizePicksScraper.getActiveProps("NBA"),
+    ])
+
+    const result = {
+      games: gamesSync.status === "fulfilled" ? gamesSync.value.length : 0,
+      props: propsSync.status === "fulfilled" ? propsSync.value.length : 0,
+      timestamp: new Date().toISOString(),
+      source: "enhanced-manual-refresh",
     }
 
-    console.log("Manual sync triggered")
-
-    // Trigger manual sync
-    const result = await dataSyncService.performFullSync()
-
-    console.log("Manual sync completed:", result)
+    console.log("✅ Manual enhanced refresh completed:", result)
 
     return NextResponse.json({
       success: true,
-      message: "Data sync completed",
+      message: "Enhanced data refresh completed",
       result,
     })
   } catch (error) {
-    console.error("Error triggering manual sync:", error)
+    console.error("💥 Error in manual enhanced refresh:", error)
 
     return NextResponse.json(
       {
         success: false,
-        error: "Failed to sync data",
+        error: "Failed to refresh enhanced data",
         message: error instanceof Error ? error.message : "Unknown error",
       },
       { status: 500 },
