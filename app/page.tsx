@@ -98,6 +98,7 @@ type News = {
   impact: "positive" | "negative" | "neutral"
   playerName?: string
   teamName?: string
+  url?: string // Add URL field
 }
 
 type Injury = {
@@ -235,6 +236,7 @@ export default function ChatInterface() {
         impact: item?.impact || "neutral",
         playerName: item?.player_name || item?.playerName || "",
         teamName: item?.team_name || item?.teamName || "",
+        url: item?.url || "", // Add URL mapping
       }))
     : []
 
@@ -1145,9 +1147,18 @@ export default function ChatInterface() {
           <p>{message.content}</p>
           <div className="space-y-3 mt-2">
             {(message.data?.news || []).map((item: News) => (
-              <div key={item.id} className="bg-gray-800 rounded-lg p-3 border border-gray-700">
+              <div
+                key={item.id}
+                className="bg-gray-800 rounded-lg p-3 border border-gray-700 hover:border-gray-600 transition-colors"
+              >
                 <div className="flex justify-between items-start">
-                  <div className="font-bold">{item.title}</div>
+                  <div
+                    className="font-bold cursor-pointer hover:text-[#b8562f] transition-colors"
+                    onClick={() => item.url && window.open(item.url, "_blank", "noopener,noreferrer")}
+                  >
+                    {item.title}
+                    {item.url && <span className="ml-1 text-xs">🔗</span>}
+                  </div>
                   <Badge
                     className={
                       item.impact === "positive"
@@ -1163,7 +1174,17 @@ export default function ChatInterface() {
                 <div className="mt-2 text-sm text-gray-300">{item.content}</div>
                 <div className="mt-2 flex justify-between items-center text-xs text-gray-400">
                   <span>{item.source}</span>
-                  <span>{new Date(item.date).toLocaleDateString()}</span>
+                  <div className="flex items-center gap-2">
+                    <span>{new Date(item.date).toLocaleDateString()}</span>
+                    {item.url && (
+                      <button
+                        onClick={() => window.open(item.url, "_blank", "noopener,noreferrer")}
+                        className="text-[#b8562f] hover:text-[#c96a43] transition-colors"
+                      >
+                        Read More →
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
             ))}
@@ -1614,9 +1635,18 @@ export default function ChatInterface() {
           </DialogHeader>
           <div className="flex-1 overflow-y-auto p-4 space-y-4">
             {newsItems.map((item) => (
-              <div key={item.id} className="bg-gray-800 rounded-lg p-4 border border-gray-700">
+              <div
+                key={item.id}
+                className="bg-gray-800 rounded-lg p-4 border border-gray-700 hover:border-gray-600 transition-colors"
+              >
                 <div className="flex justify-between items-start mb-2">
-                  <div className="font-bold text-sm">{item.title}</div>
+                  <div
+                    className="font-bold text-sm cursor-pointer hover:text-[#b8562f] transition-colors flex items-center"
+                    onClick={() => item.url && window.open(item.url, "_blank", "noopener,noreferrer")}
+                  >
+                    {item.title}
+                    {item.url && <span className="ml-1 text-xs">🔗</span>}
+                  </div>
                   <Badge
                     className={
                       item.impact === "positive"
@@ -1630,9 +1660,19 @@ export default function ChatInterface() {
                   </Badge>
                 </div>
                 <div className="text-sm text-gray-300 mb-2">{item.content}</div>
-                <div className="text-xs text-gray-400 flex justify-between">
+                <div className="text-xs text-gray-400 flex justify-between items-center">
                   <span>{item.source}</span>
-                  <span>{new Date(item.date).toLocaleDateString()}</span>
+                  <div className="flex items-center gap-2">
+                    <span>{new Date(item.date).toLocaleDateString()}</span>
+                    {item.url && (
+                      <button
+                        onClick={() => window.open(item.url, "_blank", "noopener,noreferrer")}
+                        className="text-[#b8562f] hover:text-[#c96a43] transition-colors font-medium"
+                      >
+                        Read Full Article →
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
             ))}

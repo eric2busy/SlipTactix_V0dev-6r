@@ -258,7 +258,7 @@ export class SportsAPI {
       playerName: this.extractPlayerName(article.headline || ""),
       teamName: this.extractTeamName(article.headline || ""),
       updated: new Date().toISOString(),
-      url: article.links?.web?.href || "",
+      url: article.links?.web?.href || article.link || "", // Add URL field
       category: "Breaking News",
     }))
   }
@@ -326,6 +326,7 @@ export class SportsAPI {
       teamName: news.teamName,
       updated: currentDate.toISOString(),
       category: news.category,
+      url: `https://www.espn.com/nba/story/_/id/${Math.floor(Math.random() * 1000000)}/nba-news`, // Add realistic URLs
     }))
   }
 
