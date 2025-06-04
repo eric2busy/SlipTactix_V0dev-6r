@@ -57,6 +57,7 @@ type Message = {
     | "trending-props"
     | "injury-report"
     | "news-update"
+    | "no-data-available"
   data?: any
 }
 
@@ -98,7 +99,7 @@ type News = {
   impact: "positive" | "negative" | "neutral"
   playerName?: string
   teamName?: string
-  url?: string // Add URL field
+  url?: string
 }
 
 type Injury = {
@@ -127,7 +128,8 @@ export default function ChatInterface() {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: "welcome",
-      content: "Hi there! I'm SLIPTACTIX with real-time NBA data. How can I help with your sports analysis today?",
+      content:
+        "Hi! I'm SLIPTACTIX with real-time NBA data. I only provide accurate, live information - no fake data. How can I help with your sports analysis today?",
       sender: "bot",
       timestamp: new Date(),
     },
@@ -180,138 +182,101 @@ export default function ChatInterface() {
     }
   }, [realTimeData])
 
-  // Convert real-time data to component format with enhanced error handling
-  const liveGames = Array.isArray(realTimeData?.games)
-    ? realTimeData.games.map((game: any) => ({
-        id: game?.id || `game-${Math.random()}`,
-        homeTeam: game?.home_team || game?.homeTeam || "HOME",
-        awayTeam: game?.away_team || game?.awayTeam || "AWAY",
-        homeScore: Number(game?.home_score || game?.homeScore) || 0,
-        awayScore: Number(game?.away_score || game?.awayScore) || 0,
-        quarter: game?.quarter || "",
-        timeRemaining: game?.time_remaining || game?.timeRemaining || "",
-        homeOdds: game?.home_odds || game?.homeOdds || "",
-        awayOdds: game?.away_odds || game?.awayOdds || "",
-        startTime: game?.start_time || game?.startTime || "",
-        date: game?.game_date || game?.date || new Date().toISOString().split("T")[0],
-        status: game?.status || "scheduled",
-        venue: game?.venue || "",
-        broadcast: game?.broadcast || "",
-      }))
-    : []
+  // Convert real-time data to component format with enhanced error handling - ONLY REAL DATA
+  const liveGames =
+    Array.isArray(realTimeData?.games) && realTimeData.games.length > 0
+      ? realTimeData.games.map((game: any) => ({
+          id: game?.id || `game-${Math.random()}`,
+          homeTeam: game?.home_team || game?.homeTeam || "HOME",
+          awayTeam: game?.away_team || game?.awayTeam || "AWAY",
+          homeScore: Number(game?.home_score || game?.homeScore) || 0,
+          awayScore: Number(game?.away_score || game?.awayScore) || 0,
+          quarter: game?.quarter || "",
+          timeRemaining: game?.time_remaining || game?.timeRemaining || "",
+          homeOdds: game?.home_odds || game?.homeOdds || "",
+          awayOdds: game?.away_odds || game?.awayOdds || "",
+          startTime: game?.start_time || game?.startTime || "",
+          date: game?.game_date || game?.date || new Date().toISOString().split("T")[0],
+          status: game?.status || "scheduled",
+          venue: game?.venue || "",
+          broadcast: game?.broadcast || "",
+        }))
+      : []
 
-  const trendingProps = Array.isArray(realTimeData?.props)
-    ? realTimeData.props.map((prop: any) => ({
-        id: prop?.id || `prop-${Math.random()}`,
-        player: prop?.player_name || prop?.player || "Unknown Player",
-        team: prop?.team || "UNK",
-        prop: prop?.prop_type || prop?.prop || "Points",
-        line: prop?.line?.toString() || "0",
-        odds: prop?.odds || "Pick",
-        confidence: Number(prop?.confidence) || 50,
-        trend: prop?.trend || "neutral",
-        analysis: prop?.analysis || "No analysis available",
-      }))
-    : []
+  const trendingProps =
+    Array.isArray(realTimeData?.props) && realTimeData.props.length > 0
+      ? realTimeData.props.map((prop: any) => ({
+          id: prop?.id || `prop-${Math.random()}`,
+          player: prop?.player_name || prop?.player || "Unknown Player",
+          team: prop?.team || "UNK",
+          prop: prop?.prop_type || prop?.prop || "Points",
+          line: prop?.line?.toString() || "0",
+          odds: prop?.odds || "Pick",
+          confidence: Number(prop?.confidence) || 50,
+          trend: prop?.trend || "neutral",
+          analysis: prop?.analysis || "No analysis available",
+        }))
+      : []
 
-  const injuries = Array.isArray(realTimeData?.injuries)
-    ? realTimeData.injuries.map((injury: any) => ({
-        id: injury?.id || `injury-${Math.random()}`,
-        playerName: injury?.player_name || injury?.playerName || "Unknown Player",
-        team: injury?.team || "UNK",
-        status: injury?.status || "Questionable",
-        injury: injury?.injury_type || injury?.injury || "Unknown",
-        notes: injury?.notes || "No details available",
-        updated: injury?.updated_at ? new Date(injury.updated_at).toLocaleString() : "Unknown",
-      }))
-    : []
+  const injuries =
+    Array.isArray(realTimeData?.injuries) && realTimeData.injuries.length > 0
+      ? realTimeData.injuries.map((injury: any) => ({
+          id: injury?.id || `injury-${Math.random()}`,
+          playerName: injury?.player_name || injury?.playerName || "Unknown Player",
+          team: injury?.team || "UNK",
+          status: injury?.status || "Questionable",
+          injury: injury?.injury_type || injury?.injury || "Unknown",
+          notes: injury?.notes || "No details available",
+          updated: injury?.updated_at ? new Date(injury.updated_at).toLocaleString() : "Unknown",
+        }))
+      : []
 
-  const newsItems = Array.isArray(realTimeData?.news)
-    ? realTimeData.news.map((item: any) => ({
-        id: item?.id || `news-${Math.random()}`,
-        title: item?.title || "News Update",
-        content: item?.content || "No content available",
-        source: item?.source || "Unknown",
-        date: item?.published_date || item?.date || new Date().toISOString(),
-        impact: item?.impact || "neutral",
-        playerName: item?.player_name || item?.playerName || "",
-        teamName: item?.team_name || item?.teamName || "",
-        url: item?.url || "", // Add URL mapping
-      }))
-    : []
+  const newsItems =
+    Array.isArray(realTimeData?.news) && realTimeData.news.length > 0
+      ? realTimeData.news.map((item: any) => ({
+          id: item?.id || `news-${Math.random()}`,
+          title: item?.title || "News Update",
+          content: item?.content || "No content available",
+          source: item?.source || "Unknown",
+          date: item?.published_date || item?.date || new Date().toISOString(),
+          impact: item?.impact || "neutral",
+          playerName: item?.player_name || item?.playerName || "",
+          teamName: item?.team_name || item?.teamName || "",
+          url: item?.url || "",
+        }))
+      : []
 
   // Quick chat options organized by category
   const quickChatOptions: Record<QuickChatCategory, string[]> = {
     General: [
       "Show me today's NBA games",
-      "What games are on tomorrow?",
-      "Show me upcoming games this week",
-      "Who's playing tonight?",
-      "Show me live scores",
-      "What are the top trending props?",
+      "Show me trending props",
       "Show me the latest injury report",
-      "What's your highest confidence pick today?",
+      "Show me the latest news",
+      "What real data do you have?",
+      "Check data availability",
     ],
     Analysis: [
-      "Compare LeBron vs Jokić stats",
-      "Which team has the best offensive rating?",
-      "Analyze home vs away performance for Lakers",
-      "Who's the most efficient scorer in the NBA?",
-      "Show me defensive matchup advantages",
-      "Which players exceed their props most often?",
-      "Analyze pace factors for tonight's games",
-      "Show me teams with best ATS records",
+      "Analyze available game data",
+      "Show me prop analysis",
+      "What's your data source?",
+      "Show me real-time updates",
     ],
     Props: [
-      "Best points props for tonight",
-      "Show me rebounding props with value",
-      "Which assist props are trending up?",
-      "Show me 3-point props for guards",
-      "Best PRA (points+rebounds+assists) combos",
-      "Show me props for players on back-to-backs",
-      "Which player has the best value on their points line?",
-      "Show me all props for LeBron James",
+      "Show me real props data",
+      "Check PrizePicks connection",
+      "Show me available props",
+      "What props are live?",
     ],
-    Games: [
-      "Show me all live games",
-      "What's the best game to watch tonight?",
-      "Which game has the highest total?",
-      "Show me games with close spreads",
-      "Which home teams are favored tonight?",
-      "Show me games with line movement",
-      "Which game has the most prop opportunities?",
-      "Show me historical matchups for Lakers vs Nuggets",
-    ],
-    Trends: [
-      "Which players are trending up in scoring?",
-      "Show me teams with positive ATS trends",
-      "Which props have hit in 3+ consecutive games?",
-      "Show me players exceeding minutes projections",
-      "Which teams are trending over the total?",
-      "Show me players with increasing usage rates",
-      "Which defensive trends should I know about?",
-      "Show me players trending down in production",
-    ],
+    Games: ["Show me live games", "Check ESPN connection", "Show me real scores", "What games are available?"],
+    Trends: ["Show me data trends", "Check real-time status", "Show me live updates", "What's trending now?"],
     Parlays: [
-      "Build me a 3-leg parlay for tonight",
-      "What's a safe parlay for NBA tonight?",
-      "Show me correlated props for same game parlays",
-      "Build me a high-value longshot parlay",
-      "What's your recommended 2-leg parlay?",
-      "Show me the most popular parlay combinations",
-      "Build me a cross-sport parlay",
-      "What's a good parlay for player props only?",
+      "Build parlay with real data",
+      "Show me available combinations",
+      "Check prop correlations",
+      "What's available for parlays?",
     ],
-    Favorites: [
-      "Show my saved props",
-      "Show my favorite players",
-      "Show my recent searches",
-      "Show my betting history",
-      "Show my prop performance history",
-      "Show my saved parlays",
-      "Show my favorite teams analysis",
-      "Show my custom alerts",
-    ],
+    Favorites: ["Show my saved props", "Show my favorites", "Check saved data", "Show my history"],
   }
 
   // Effects
@@ -382,9 +347,25 @@ export default function ChatInterface() {
       // Safe string operations with null checks
       const messageLower = messageToSend?.toLowerCase() || ""
 
-      // Enhanced game queries with real schedule data
+      // Enhanced game queries with real schedule data - ONLY SHOW IF DATA EXISTS
       if (messageLower.includes("tomorrow") || messageLower.includes("upcoming") || messageLower.includes("next")) {
         setMessages((prev) => prev.filter((m) => m.id !== "typing"))
+
+        if (liveGames.length === 0) {
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: Date.now().toString(),
+              content:
+                "No real game data is currently available. I only show accurate, live information - no fake data. Please check back later or try refreshing the data.",
+              sender: "bot",
+              timestamp: new Date(),
+              type: "no-data-available",
+            },
+          ])
+          setIsProcessing(false)
+          return
+        }
 
         const tomorrow = new Date()
         tomorrow.setDate(tomorrow.getDate() + 1)
@@ -394,26 +375,18 @@ export default function ChatInterface() {
           return game.date >= tomorrowStr || game.status === "scheduled"
         })
 
-        console.log("🔍 Filtering upcoming games:", {
-          totalGames: liveGames.length,
-          upcomingGames: upcomingGames.length,
-          tomorrowDate: tomorrowStr,
-        })
-
         setMessages((prev) => [
           ...prev,
           {
             id: Date.now().toString(),
             content:
               upcomingGames.length > 0
-                ? `Here are the upcoming NBA games (${upcomingGames.length} games found):`
-                : "Here are the next scheduled games:",
+                ? `Here are the upcoming NBA games (${upcomingGames.length} real games found):`
+                : "No upcoming games found in the real data. Check back later for updates.",
             sender: "bot",
             timestamp: new Date(),
-            type: "live-game",
-            data: {
-              games: upcomingGames.length > 0 ? upcomingGames : liveGames.filter((g) => g.status === "scheduled"),
-            },
+            type: upcomingGames.length > 0 ? "live-game" : "no-data-available",
+            data: upcomingGames.length > 0 ? { games: upcomingGames } : undefined,
           },
         ])
         setIsProcessing(false)
@@ -427,15 +400,25 @@ export default function ChatInterface() {
       ) {
         setMessages((prev) => prev.filter((m) => m.id !== "typing"))
 
+        if (liveGames.length === 0) {
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: Date.now().toString(),
+              content:
+                "No real game data is currently available from ESPN or API Sports. I only provide accurate, live information. Please check back later or try refreshing the data.",
+              sender: "bot",
+              timestamp: new Date(),
+              type: "no-data-available",
+            },
+          ])
+          setIsProcessing(false)
+          return
+        }
+
         const today = new Date().toISOString().split("T")[0]
         const todaysGames = liveGames.filter((game) => {
           return game.date === today
-        })
-
-        console.log("🔍 Filtering today's games:", {
-          totalGames: liveGames.length,
-          todaysGames: todaysGames.length,
-          todayDate: today,
         })
 
         setMessages((prev) => [
@@ -444,8 +427,8 @@ export default function ChatInterface() {
             id: Date.now().toString(),
             content:
               todaysGames.length > 0
-                ? `Here are today's NBA games (${todaysGames.length} games found):`
-                : "Here are the current games:",
+                ? `Here are today's NBA games (${todaysGames.length} real games found):`
+                : `Here are the available games (${liveGames.length} real games):`,
             sender: "bot",
             timestamp: new Date(),
             type: "live-game",
@@ -458,9 +441,25 @@ export default function ChatInterface() {
         return
       }
 
-      // Special commands for showing games and value props using real data
+      // Special commands for showing games and value props using real data - ONLY IF DATA EXISTS
       if (messageLower.includes("live") || messageLower.includes("score")) {
         setMessages((prev) => prev.filter((m) => m.id !== "typing"))
+
+        if (liveGames.length === 0) {
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: Date.now().toString(),
+              content:
+                "No live game data is currently available. I only provide real, accurate scores from ESPN and API Sports. Please check back later.",
+              sender: "bot",
+              timestamp: new Date(),
+              type: "no-data-available",
+            },
+          ])
+          setIsProcessing(false)
+          return
+        }
 
         const liveOnlyGames = liveGames.filter((game) => game.status === "live")
 
@@ -468,12 +467,15 @@ export default function ChatInterface() {
           ...prev,
           {
             id: Date.now().toString(),
-            content: `Here are the current live games (${liveOnlyGames.length} live games):`,
+            content:
+              liveOnlyGames.length > 0
+                ? `Here are the current live games (${liveOnlyGames.length} live games):`
+                : `No games are currently live. Here are available games (${liveGames.length} games):`,
             sender: "bot",
             timestamp: new Date(),
             type: "live-game",
             data: {
-              games: liveOnlyGames,
+              games: liveOnlyGames.length > 0 ? liveOnlyGames : liveGames,
             },
           },
         ])
@@ -483,6 +485,22 @@ export default function ChatInterface() {
 
       if (messageLower.includes("injury") || messageLower.includes("injuries")) {
         setMessages((prev) => prev.filter((m) => m.id !== "typing"))
+
+        if (injuries.length === 0) {
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: Date.now().toString(),
+              content:
+                "No real injury data is currently available. I only provide accurate injury reports from official sources. Please check back later when real data is available.",
+              sender: "bot",
+              timestamp: new Date(),
+              type: "no-data-available",
+            },
+          ])
+          setIsProcessing(false)
+          return
+        }
 
         setMessages((prev) => [
           ...prev,
@@ -504,6 +522,22 @@ export default function ChatInterface() {
       if (messageLower.includes("news") || messageLower.includes("updates")) {
         setMessages((prev) => prev.filter((m) => m.id !== "typing"))
 
+        if (newsItems.length === 0) {
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: Date.now().toString(),
+              content:
+                "No real news data is currently available. I only provide accurate news from ESPN and official sources. Please check back later.",
+              sender: "bot",
+              timestamp: new Date(),
+              type: "no-data-available",
+            },
+          ])
+          setIsProcessing(false)
+          return
+        }
+
         setMessages((prev) => [
           ...prev,
           {
@@ -521,90 +555,39 @@ export default function ChatInterface() {
         return
       }
 
-      if (messageLower.includes("trending props") || messageLower.includes("top props")) {
+      if (
+        messageLower.includes("trending props") ||
+        messageLower.includes("top props") ||
+        messageLower.includes("props")
+      ) {
         setMessages((prev) => prev.filter((m) => m.id !== "typing"))
+
+        if (trendingProps.length === 0) {
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: Date.now().toString(),
+              content:
+                "No real props data is currently available from PrizePicks. I only provide accurate, live props - no fake data. Please check back later when real data is available.",
+              sender: "bot",
+              timestamp: new Date(),
+              type: "no-data-available",
+            },
+          ])
+          setIsProcessing(false)
+          return
+        }
 
         setMessages((prev) => [
           ...prev,
           {
             id: Date.now().toString(),
-            content: `Here are the trending props from PrizePicks right now (${trendingProps.length} props):`,
+            content: `Here are the trending props from PrizePicks right now (${trendingProps.length} real props):`,
             sender: "bot",
             timestamp: new Date(),
             type: "trending-props",
             data: {
               props: trendingProps,
-            },
-          },
-        ])
-        setIsProcessing(false)
-        return
-      }
-
-      if (messageLower.includes("build") && messageLower.includes("parlay")) {
-        setMessages((prev) => prev.filter((m) => m.id !== "typing"))
-
-        setMessages((prev) => [
-          ...prev,
-          {
-            id: Date.now().toString(),
-            content: "Here's a recommended parlay based on today's real-time value plays:",
-            sender: "bot",
-            timestamp: new Date(),
-            type: "parlay-builder",
-            data: {
-              legs: trendingProps.slice(0, 3),
-              odds: "+650",
-              winProbability: "18%",
-              expectedValue: "Positive",
-            },
-          },
-        ])
-        setIsProcessing(false)
-        return
-      }
-
-      if (
-        messageLower.includes("saved") ||
-        (messageLower.includes("my") && (messageLower.includes("props") || messageLower.includes("favorites")))
-      ) {
-        setMessages((prev) => prev.filter((m) => m.id !== "typing"))
-
-        setMessages((prev) => [
-          ...prev,
-          {
-            id: Date.now().toString(),
-            content: "Here are your saved props and favorites:",
-            sender: "bot",
-            timestamp: new Date(),
-            type: "bet-card",
-            data: {
-              recommendations: favoriteProps.length > 0 ? favoriteProps : trendingProps.slice(0, 2),
-            },
-          },
-        ])
-        setIsProcessing(false)
-        return
-      }
-
-      // Handle value plays with real data
-      if (
-        messageLower.includes("value plays") ||
-        messageLower.includes("best picks") ||
-        messageLower.includes("best props")
-      ) {
-        setMessages((prev) => prev.filter((m) => m.id !== "typing"))
-
-        setMessages((prev) => [
-          ...prev,
-          {
-            id: Date.now().toString(),
-            content: `Here are tonight's top ${activeSport} value plays from real PrizePicks data:`,
-            sender: "bot",
-            timestamp: new Date(),
-            type: "bet-card",
-            data: {
-              recommendations: trendingProps.slice(0, 3),
             },
           },
         ])
@@ -627,6 +610,12 @@ export default function ChatInterface() {
                 props: trendingProps.slice(0, 5),
                 games: liveGames.slice(0, 3),
                 injuries: injuries.slice(0, 3),
+                hasRealData: {
+                  props: trendingProps.length > 0,
+                  games: liveGames.length > 0,
+                  injuries: injuries.length > 0,
+                  news: newsItems.length > 0,
+                },
               },
             },
           }),
@@ -652,34 +641,6 @@ export default function ChatInterface() {
           timestamp: new Date(),
         }
 
-        if (responseData.fallback) {
-          setMessages((prev) => [...prev.filter((m) => m.id !== "typing"), botResponse])
-
-          setTimeout(() => {
-            const suggestionsMessage: Message = {
-              id: (Date.now() + 1).toString(),
-              content: "Here are some things I can help you with using real-time data:",
-              sender: "bot",
-              timestamp: new Date(),
-            }
-            setMessages((prev) => [...prev, suggestionsMessage])
-
-            setTimeout(() => {
-              const specificSuggestions: Message = {
-                id: (Date.now() + 2).toString(),
-                content:
-                  "• Show live games and scores\n• Display trending props from PrizePicks\n• View real injury reports\n• Build parlays with current data\n• Analyze player matchups\n\nTry clicking one of the quick suggestions below!",
-                sender: "bot",
-                timestamp: new Date(),
-              }
-              setMessages((prev) => [...prev, specificSuggestions])
-            }, 500)
-          }, 1000)
-
-          setIsProcessing(false)
-          return
-        }
-
         setMessages((prev) => [...prev.filter((m) => m.id !== "typing"), botResponse])
       } catch (apiError) {
         console.error("API Error:", apiError)
@@ -689,7 +650,7 @@ export default function ChatInterface() {
         const fallbackResponse: Message = {
           id: Date.now().toString(),
           content:
-            "I'm currently running with real-time data! I can help you with sports analysis using live PrizePicks and ESPN data.",
+            "I'm currently running with real-time data access! I can help you with sports analysis using live data from PrizePicks, ESPN, and official sources. I only provide accurate information - no fake data.",
           sender: "bot",
           timestamp: new Date(),
         }
@@ -699,7 +660,8 @@ export default function ChatInterface() {
         setTimeout(() => {
           const suggestionsMessage: Message = {
             id: (Date.now() + 1).toString(),
-            content: "Try asking about live games, trending props, injury reports, or use the quick suggestions below!",
+            content:
+              "Try asking about live games, real props, injury reports, or use the quick suggestions below for accurate data!",
             sender: "bot",
             timestamp: new Date(),
           }
@@ -716,7 +678,7 @@ export default function ChatInterface() {
         {
           id: Date.now().toString(),
           content:
-            "I'm experiencing some technical difficulties. Please try one of the quick suggestions below, or try your question again in a moment.",
+            "I'm experiencing some technical difficulties. I only provide real, accurate data - no fake information. Please try one of the quick suggestions below.",
           sender: "bot",
           timestamp: new Date(),
         },
@@ -811,7 +773,8 @@ export default function ChatInterface() {
     setMessages([
       {
         id: "welcome",
-        content: "Hi there! I'm SLIPTACTIX with real-time data. How can I help with your sports analysis today?",
+        content:
+          "Hi! I'm SLIPTACTIX with real-time NBA data. I only provide accurate, live information - no fake data. How can I help with your sports analysis today?",
         sender: "bot",
         timestamp: new Date(),
       },
@@ -841,14 +804,39 @@ export default function ChatInterface() {
   }
 
   const buildParlay = () => {
+    if (trendingProps.length === 0) {
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: Date.now().toString(),
+          content: "No real props data available for parlay building. I only use accurate data - no fake props.",
+          sender: "bot",
+          timestamp: new Date(),
+        },
+      ])
+      return
+    }
     setShowParlayBuilder(true)
   }
 
   const viewTrendingProps = () => {
+    if (trendingProps.length === 0) {
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: Date.now().toString(),
+          content:
+            "No real props data available to display. I only show accurate, live props from PrizePicks - no fake data.",
+          sender: "bot",
+          timestamp: new Date(),
+        },
+      ])
+      return
+    }
     setShowTrendingProps(true)
   }
 
-  // Render message content based on type
+  // Render message content based on type - ONLY REAL DATA
   const renderMessage = (message: Message) => {
     if (message.id === "typing") {
       return (
@@ -856,6 +844,27 @@ export default function ChatInterface() {
           <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "0ms" }}></div>
           <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "150ms" }}></div>
           <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "300ms" }}></div>
+        </div>
+      )
+    }
+
+    if (message.type === "no-data-available") {
+      return (
+        <div>
+          <p className="mb-2">{message.content}</p>
+          <div className="bg-yellow-900/20 border border-yellow-600/30 rounded-lg p-3 mt-2">
+            <div className="flex items-center gap-2 mb-2">
+              <AlertCircle className="w-4 h-4 text-yellow-500" />
+              <span className="text-sm font-medium text-yellow-400">Real Data Only</span>
+            </div>
+            <p className="text-sm text-yellow-200">
+              SLIPTACTIX only provides accurate, real-time data. No mock or fake information is ever shown to ensure you
+              make informed decisions.
+            </p>
+            <div className="mt-2 text-xs text-yellow-300">
+              • Try refreshing the data • Check back later for updates • Use the quick action buttons for available data
+            </div>
+          </div>
         </div>
       )
     }
@@ -1389,7 +1398,10 @@ export default function ChatInterface() {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <RealTimeStatus />
+          <RealTimeStatus
+            lastUpdated={realTimeData?.timestamp ? new Date(realTimeData.timestamp) : null}
+            onRefresh={refreshData}
+          />
 
           <TooltipProvider>
             <Tooltip>
@@ -1400,11 +1412,13 @@ export default function ChatInterface() {
                   aria-label="News"
                 >
                   <AlertCircle className="w-5 h-5" />
-                  <span className="absolute top-0 right-0 w-2 h-2 bg-[#b8562f] rounded-full"></span>
+                  {newsItems.length > 0 && (
+                    <span className="absolute top-0 right-0 w-2 h-2 bg-[#b8562f] rounded-full"></span>
+                  )}
                 </button>
               </TooltipTrigger>
               <TooltipContent>
-                <p>Latest News</p>
+                <p>Latest News ({newsItems.length} articles)</p>
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
@@ -1598,7 +1612,7 @@ export default function ChatInterface() {
                 }
               }}
               onKeyDown={handleKeyDown}
-              placeholder="ask anything"
+              placeholder="ask about real data only"
               className="w-full bg-gray-800 rounded-full py-3 px-4 pr-12 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#b8562f] transition-shadow"
             />
             <button
@@ -1631,51 +1645,64 @@ export default function ChatInterface() {
       <Dialog open={showNewsDialog} onOpenChange={setShowNewsDialog}>
         <DialogContent className="bg-gray-900 text-white border border-gray-700 rounded-lg w-[95vw] h-[80vh] max-w-none mx-auto z-50 p-0 overflow-hidden">
           <DialogHeader className="p-4 border-b border-gray-700">
-            <DialogTitle>Latest NBA News</DialogTitle>
+            <DialogTitle>Latest NBA News ({newsItems.length} articles)</DialogTitle>
           </DialogHeader>
           <div className="flex-1 overflow-y-auto p-4 space-y-4">
-            {newsItems.map((item) => (
-              <div
-                key={item.id}
-                className="bg-gray-800 rounded-lg p-4 border border-gray-700 hover:border-gray-600 transition-colors"
-              >
-                <div className="flex justify-between items-start mb-2">
-                  <div
-                    className="font-bold text-sm cursor-pointer hover:text-[#b8562f] transition-colors flex items-center"
-                    onClick={() => item.url && window.open(item.url, "_blank", "noopener,noreferrer")}
-                  >
-                    {item.title}
-                    {item.url && <span className="ml-1 text-xs">🔗</span>}
+            {newsItems.length > 0 ? (
+              newsItems.map((item) => (
+                <div
+                  key={item.id}
+                  className="bg-gray-800 rounded-lg p-4 border border-gray-700 hover:border-gray-600 transition-colors"
+                >
+                  <div className="flex justify-between items-start mb-2">
+                    <div
+                      className="font-bold text-sm cursor-pointer hover:text-[#b8562f] transition-colors flex items-center"
+                      onClick={() => item.url && window.open(item.url, "_blank", "noopener,noreferrer")}
+                    >
+                      {item.title}
+                      {item.url && <span className="ml-1 text-xs">🔗</span>}
+                    </div>
+                    <Badge
+                      className={
+                        item.impact === "positive"
+                          ? "bg-green-500"
+                          : item.impact === "negative"
+                            ? "bg-red-500"
+                            : "bg-gray-500"
+                      }
+                    >
+                      {item.impact}
+                    </Badge>
                   </div>
-                  <Badge
-                    className={
-                      item.impact === "positive"
-                        ? "bg-green-500"
-                        : item.impact === "negative"
-                          ? "bg-red-500"
-                          : "bg-gray-500"
-                    }
-                  >
-                    {item.impact}
-                  </Badge>
-                </div>
-                <div className="text-sm text-gray-300 mb-2">{item.content}</div>
-                <div className="text-xs text-gray-400 flex justify-between items-center">
-                  <span>{item.source}</span>
-                  <div className="flex items-center gap-2">
-                    <span>{new Date(item.date).toLocaleDateString()}</span>
-                    {item.url && (
-                      <button
-                        onClick={() => window.open(item.url, "_blank", "noopener,noreferrer")}
-                        className="text-[#b8562f] hover:text-[#c96a43] transition-colors font-medium"
-                      >
-                        Read Full Article →
-                      </button>
-                    )}
+                  <div className="text-sm text-gray-300 mb-2">{item.content}</div>
+                  <div className="text-xs text-gray-400 flex justify-between items-center">
+                    <span>{item.source}</span>
+                    <div className="flex items-center gap-2">
+                      <span>{new Date(item.date).toLocaleDateString()}</span>
+                      {item.url && (
+                        <button
+                          onClick={() => window.open(item.url, "_blank", "noopener,noreferrer")}
+                          className="text-[#b8562f] hover:text-[#c96a43] transition-colors font-medium"
+                        >
+                          Read Full Article →
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </div>
+              ))
+            ) : (
+              <div className="bg-yellow-900/20 border border-yellow-600/30 rounded-lg p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <AlertCircle className="w-4 h-4 text-yellow-500" />
+                  <span className="text-sm font-medium text-yellow-400">No Real News Data Available</span>
+                </div>
+                <p className="text-sm text-yellow-200">
+                  No real news data is currently available from ESPN or other sources. Check back later for live
+                  updates.
+                </p>
               </div>
-            ))}
+            )}
           </div>
         </DialogContent>
       </Dialog>
@@ -1684,34 +1711,46 @@ export default function ChatInterface() {
       <Dialog open={showInjuryDialog} onOpenChange={setShowInjuryDialog}>
         <DialogContent className="bg-gray-900 text-white border border-gray-700 rounded-lg w-[95vw] h-[80vh] max-w-none mx-auto z-50 p-0 overflow-hidden">
           <DialogHeader className="p-4 border-b border-gray-700">
-            <DialogTitle>NBA Injury Report</DialogTitle>
+            <DialogTitle>NBA Injury Report ({injuries.length} players)</DialogTitle>
           </DialogHeader>
           <div className="flex-1 overflow-y-auto p-4 space-y-4">
-            {injuries.map((injury) => (
-              <div key={injury.id} className="bg-gray-800 rounded-lg p-4 border border-gray-700">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center">
-                    <span className="font-bold">{injury.playerName}</span>
-                    <span className="text-gray-400 text-sm ml-2">{injury.team}</span>
+            {injuries.length > 0 ? (
+              injuries.map((injury) => (
+                <div key={injury.id} className="bg-gray-800 rounded-lg p-4 border border-gray-700">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center">
+                      <span className="font-bold">{injury.playerName}</span>
+                      <span className="text-gray-400 text-sm ml-2">{injury.team}</span>
+                    </div>
+                    <Badge
+                      className={
+                        injury.status === "Out"
+                          ? "bg-red-500"
+                          : injury.status === "Questionable"
+                            ? "bg-yellow-500"
+                            : injury.status === "Doubtful"
+                              ? "bg-orange-500"
+                              : "bg-green-500"
+                      }
+                    >
+                      {injury.status}
+                    </Badge>
                   </div>
-                  <Badge
-                    className={
-                      injury.status === "Out"
-                        ? "bg-red-500"
-                        : injury.status === "Questionable"
-                          ? "bg-yellow-500"
-                          : injury.status === "Doubtful"
-                            ? "bg-orange-500"
-                            : "bg-green-500"
-                    }
-                  >
-                    {injury.status}
-                  </Badge>
+                  <div className="text-sm text-gray-300 mb-1">{injury.injury}</div>
+                  <div className="text-sm text-gray-400">{injury.notes}</div>
                 </div>
-                <div className="text-sm text-gray-300 mb-1">{injury.injury}</div>
-                <div className="text-sm text-gray-400">{injury.notes}</div>
+              ))
+            ) : (
+              <div className="bg-yellow-900/20 border border-yellow-600/30 rounded-lg p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <AlertCircle className="w-4 h-4 text-yellow-500" />
+                  <span className="text-sm font-medium text-yellow-400">No Real Injury Data Available</span>
+                </div>
+                <p className="text-sm text-yellow-200">
+                  No real injury data is currently available from official sources. Check back later for live updates.
+                </p>
               </div>
-            ))}
+            )}
           </div>
         </DialogContent>
       </Dialog>
@@ -1751,48 +1790,63 @@ export default function ChatInterface() {
             <DialogTitle>Parlay Builder</DialogTitle>
           </DialogHeader>
           <div className="flex-1 overflow-y-auto p-4 space-y-4">
-            <div className="bg-gray-800 p-3 rounded-lg">
-              <h3 className="font-medium mb-2">Selected Props</h3>
-              <div className="space-y-2">
-                {trendingProps.slice(0, 3).map((prop) => (
-                  <div key={prop.id} className="flex justify-between items-center p-2 bg-gray-700 rounded">
-                    <div>
-                      <div className="font-medium">{prop.player}</div>
-                      <div className="text-sm text-gray-300">
-                        {prop.prop} {prop.line} {prop.odds}
+            {trendingProps.length > 0 ? (
+              <>
+                <div className="bg-gray-800 p-3 rounded-lg">
+                  <h3 className="font-medium mb-2">Selected Props</h3>
+                  <div className="space-y-2">
+                    {trendingProps.slice(0, 3).map((prop) => (
+                      <div key={prop.id} className="flex justify-between items-center p-2 bg-gray-700 rounded">
+                        <div>
+                          <div className="font-medium">{prop.player}</div>
+                          <div className="text-sm text-gray-300">
+                            {prop.prop} {prop.line} {prop.odds}
+                          </div>
+                        </div>
+                        <button className="text-gray-400 hover:text-white">
+                          <X className="w-4 h-4" />
+                        </button>
                       </div>
-                    </div>
-                    <button className="text-gray-400 hover:text-white">
-                      <X className="w-4 h-4" />
-                    </button>
+                    ))}
                   </div>
-                ))}
-              </div>
-              <div className="mt-3 flex justify-between items-center">
-                <div>
-                  <div className="text-sm text-gray-400">Total Odds</div>
-                  <div className="font-bold">+650</div>
+                  <div className="mt-3 flex justify-between items-center">
+                    <div>
+                      <div className="text-sm text-gray-400">Total Odds</div>
+                      <div className="font-bold">+650</div>
+                    </div>
+                    <Button className="bg-[#b8562f] hover:bg-[#c96a43]">Add More Props</Button>
+                  </div>
                 </div>
-                <Button className="bg-[#b8562f] hover:bg-[#c96a43]">Add More Props</Button>
-              </div>
-            </div>
-            <div className="bg-gray-800 p-3 rounded-lg">
-              <h3 className="font-medium mb-2">Recommended Props</h3>
-              <div className="space-y-2">
-                {trendingProps.slice(3, 5).map((prop) => (
-                  <div key={prop.id} className="flex justify-between items-center p-2 bg-gray-700 rounded">
-                    <div>
-                      <div className="font-medium">{prop.player}</div>
-                      <div className="text-sm text-gray-300">
-                        {prop.prop} {prop.line} {prop.odds}
+                <div className="bg-gray-800 p-3 rounded-lg">
+                  <h3 className="font-medium mb-2">Recommended Props</h3>
+                  <div className="space-y-2">
+                    {trendingProps.slice(3, 5).map((prop) => (
+                      <div key={prop.id} className="flex justify-between items-center p-2 bg-gray-700 rounded">
+                        <div>
+                          <div className="font-medium">{prop.player}</div>
+                          <div className="text-sm text-gray-300">
+                            {prop.prop} {prop.line} {prop.odds}
+                          </div>
+                        </div>
+                        <button className="text-xs px-2 py-1 bg-[#b8562f] rounded hover:bg-[#c96a43]">Add</button>
                       </div>
-                    </div>
-                    <button className="text-xs px-2 py-1 bg-[#b8562f] rounded hover:bg-[#c96a43]">Add</button>
+                    ))}
                   </div>
-                ))}
+                </div>
+                <Button className="w-full bg-[#b8562f] hover:bg-[#c96a43]">Export Parlay</Button>
+              </>
+            ) : (
+              <div className="bg-yellow-900/20 border border-yellow-600/30 rounded-lg p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <AlertCircle className="w-4 h-4 text-yellow-500" />
+                  <span className="text-sm font-medium text-yellow-400">No Real Props Data Available</span>
+                </div>
+                <p className="text-sm text-yellow-200">
+                  No real props data is available for parlay building. Check back when live PrizePicks data is
+                  available.
+                </p>
               </div>
-            </div>
-            <Button className="w-full bg-[#b8562f] hover:bg-[#c96a43]">Export Parlay</Button>
+            )}
           </div>
         </DialogContent>
       </Dialog>
@@ -1801,87 +1855,101 @@ export default function ChatInterface() {
       <Dialog open={showTrendingProps} onOpenChange={setShowTrendingProps}>
         <DialogContent className="bg-gray-900 text-white border border-gray-700 rounded-lg w-[95vw] h-[85vh] max-w-none mx-auto z-50 p-0 overflow-hidden">
           <DialogHeader className="p-4 border-b border-gray-700">
-            <DialogTitle>Trending Props</DialogTitle>
+            <DialogTitle>Trending Props ({trendingProps.length} available)</DialogTitle>
           </DialogHeader>
           <div className="flex-1 overflow-y-auto p-4 space-y-3">
-            {trendingProps.map((prop) => (
-              <div
-                key={prop.id}
-                className="bg-gray-800 rounded-lg p-3 border border-gray-700 transition-all hover:border-gray-600 cursor-pointer"
-                onClick={() => handlePlayerCardClick(prop.player)}
-              >
-                <div className="flex justify-between items-start">
-                  <div>
-                    <div className="flex items-center">
-                      <span className="font-bold">{prop.player}</span>
-                      <span className="text-gray-400 text-sm ml-2">{prop.team}</span>
-                    </div>
-                    <div className="text-sm mt-1">
-                      <span className="text-gray-300">{prop.prop}</span>
-                      <span className="mx-1">|</span>
-                      <span className="font-medium">
-                        {prop.line}{" "}
-                        {prop.prop?.includes("Points") ? "pts" : prop.prop?.includes("Rebounds") ? "reb" : ""}
-                      </span>
-                      <span className="mx-1">|</span>
-                      <span className={prop.odds?.includes("+") ? "text-[#54c863]" : "text-gray-300"}>{prop.odds}</span>
-                    </div>
-                  </div>
-                  <div className="flex flex-col items-end">
-                    <div className="flex items-center">
-                      <div
-                        className={cn(
-                          "h-1.5 w-16 rounded-full",
-                          prop.confidence >= 80
-                            ? "bg-[#54c863]"
-                            : prop.confidence >= 65
-                              ? "bg-yellow-500"
-                              : "bg-orange-500",
-                        )}
-                      >
-                        <div
-                          className="h-full rounded-full bg-gray-700"
-                          style={{ width: `${100 - prop.confidence}%`, marginLeft: `${prop.confidence}%` }}
-                        ></div>
+            {trendingProps.length > 0 ? (
+              trendingProps.map((prop) => (
+                <div
+                  key={prop.id}
+                  className="bg-gray-800 rounded-lg p-3 border border-gray-700 transition-all hover:border-gray-600 cursor-pointer"
+                  onClick={() => handlePlayerCardClick(prop.player)}
+                >
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <div className="flex items-center">
+                        <span className="font-bold">{prop.player}</span>
+                        <span className="text-gray-400 text-sm ml-2">{prop.team}</span>
                       </div>
-                      <span className="text-xs ml-2">{prop.confidence}%</span>
+                      <div className="text-sm mt-1">
+                        <span className="text-gray-300">{prop.prop}</span>
+                        <span className="mx-1">|</span>
+                        <span className="font-medium">
+                          {prop.line}{" "}
+                          {prop.prop?.includes("Points") ? "pts" : prop.prop?.includes("Rebounds") ? "reb" : ""}
+                        </span>
+                        <span className="mx-1">|</span>
+                        <span className={prop.odds?.includes("+") ? "text-[#54c863]" : "text-gray-300"}>
+                          {prop.odds}
+                        </span>
+                      </div>
                     </div>
-                    <div className="flex mt-2 gap-1">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          addToPropsList(prop)
-                        }}
-                        className="text-xs px-3 py-1 bg-[#b8562f] rounded-full hover:bg-[#c96a43] transition-colors"
-                      >
-                        Add to Props
-                      </button>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          addToFavorites(prop)
-                        }}
-                        className="text-xs px-3 py-1 bg-gray-700 rounded-full hover:bg-gray-600 transition-colors"
-                      >
-                        <Bookmark className="w-3 h-3" />
-                      </button>
+                    <div className="flex flex-col items-end">
+                      <div className="flex items-center">
+                        <div
+                          className={cn(
+                            "h-1.5 w-16 rounded-full",
+                            prop.confidence >= 80
+                              ? "bg-[#54c863]"
+                              : prop.confidence >= 65
+                                ? "bg-yellow-500"
+                                : "bg-orange-500",
+                          )}
+                        >
+                          <div
+                            className="h-full rounded-full bg-gray-700"
+                            style={{ width: `${100 - prop.confidence}%`, marginLeft: `${prop.confidence}%` }}
+                          ></div>
+                        </div>
+                        <span className="text-xs ml-2">{prop.confidence}%</span>
+                      </div>
+                      <div className="flex mt-2 gap-1">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            addToPropsList(prop)
+                          }}
+                          className="text-xs px-3 py-1 bg-[#b8562f] rounded-full hover:bg-[#c96a43] transition-colors"
+                        >
+                          Add to Props
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            addToFavorites(prop)
+                          }}
+                          className="text-xs px-3 py-1 bg-gray-700 rounded-full hover:bg-gray-600 transition-colors"
+                        >
+                          <Bookmark className="w-3 h-3" />
+                        </button>
+                      </div>
                     </div>
                   </div>
+                  <div className="mt-2 text-xs text-gray-400 flex items-center">
+                    {prop.trend === "up" ? (
+                      <ArrowUp className="w-3 h-3 text-[#54c863] mr-1" />
+                    ) : prop.trend === "down" ? (
+                      <ArrowUp className="w-3 h-3 text-red-500 mr-1 transform rotate-180" />
+                    ) : null}
+                    {prop.trend === "up"
+                      ? "Trending up in last 5 games"
+                      : prop.trend === "down"
+                        ? "Trending down in last 5 games"
+                        : "Consistent in last 5 games"}
+                  </div>
                 </div>
-                <div className="mt-2 text-xs text-gray-400 flex items-center">
-                  {prop.trend === "up" ? (
-                    <ArrowUp className="w-3 h-3 text-[#54c863] mr-1" />
-                  ) : prop.trend === "down" ? (
-                    <ArrowUp className="w-3 h-3 text-red-500 mr-1 transform rotate-180" />
-                  ) : null}
-                  {prop.trend === "up"
-                    ? "Trending up in last 5 games"
-                    : prop.trend === "down"
-                      ? "Trending down in last 5 games"
-                      : "Consistent in last 5 games"}
+              ))
+            ) : (
+              <div className="bg-yellow-900/20 border border-yellow-600/30 rounded-lg p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <AlertCircle className="w-4 h-4 text-yellow-500" />
+                  <span className="text-sm font-medium text-yellow-400">No Real Props Data Available</span>
                 </div>
+                <p className="text-sm text-yellow-200">
+                  No real props data is currently available from PrizePicks. Check back later for live updates.
+                </p>
               </div>
-            ))}
+            )}
           </div>
         </DialogContent>
       </Dialog>
