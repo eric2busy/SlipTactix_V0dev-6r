@@ -8,9 +8,9 @@
 NEXT_PUBLIC_SUPABASE_URL=https://mncxxmvrmuhzzagxdwmv.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 
-# Grok API
-NEXT_PUBLIC_GROK_API_URL=https://api.x.ai/v1/chat/completions
-NEXT_PUBLIC_GROK_API_KEY=xai-9UF1AE4GLQmMlwSGhBZ7Nt71LB7ZyznIEtSWDzdGHMBizc7m0inMvbbuzLPUqc4mga8w3EIwyFpEoyRu
+# Grok API (Server-side only)
+GROK_API_URL=https://api.x.ai/v1/chat/completions
+GROK_API_KEY=your-grok-api-key-here
 
 # App Configuration
 NEXT_PUBLIC_SITE_URL=https://your-app-domain.com

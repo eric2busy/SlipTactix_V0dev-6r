@@ -6,8 +6,8 @@ export async function POST(request: NextRequest) {
     const { props, projections, sport } = body
 
     // Get the API key from environment variables
-    const apiKey = process.env.NEXT_PUBLIC_GROK_API_KEY
-    const apiUrl = process.env.NEXT_PUBLIC_GROK_API_URL
+    const apiKey = process.env.GROK_API_KEY
+    const apiUrl = process.env.GROK_API_URL || "https://api.x.ai/v1/chat/completions"
 
     if (!apiKey || !apiUrl) {
       return NextResponse.json({
