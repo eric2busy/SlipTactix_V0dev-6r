@@ -85,6 +85,8 @@ type Game = {
   startTime?: string
   date?: string
   status?: "live" | "scheduled" | "final"
+  venue?: string
+  broadcast?: string
 }
 
 type News = {
@@ -124,7 +126,7 @@ export default function ChatInterface() {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: "welcome",
-      content: "Hi there! I'm SLIPTACTIX with real-time data. How can I help with your sports analysis today?",
+      content: "Hi there! I'm SLIPTACTIX with real-time NBA data. How can I help with your sports analysis today?",
       sender: "bot",
       timestamp: new Date(),
     },
@@ -159,17 +161,19 @@ export default function ChatInterface() {
   const liveGames = Array.isArray(realTimeData?.games)
     ? realTimeData.games.map((game: any) => ({
         id: game?.id || `game-${Math.random()}`,
-        homeTeam: game?.home_team || "HOME",
-        awayTeam: game?.away_team || "AWAY",
-        homeScore: Number(game?.home_score) || 0,
-        awayScore: Number(game?.away_score) || 0,
+        homeTeam: game?.home_team || game?.homeTeam || "HOME",
+        awayTeam: game?.away_team || game?.awayTeam || "AWAY",
+        homeScore: Number(game?.home_score || game?.homeScore) || 0,
+        awayScore: Number(game?.away_score || game?.awayScore) || 0,
         quarter: game?.quarter || "",
-        timeRemaining: game?.time_remaining || "",
-        homeOdds: game?.home_odds || "",
-        awayOdds: game?.away_odds || "",
-        startTime: game?.start_time || "",
-        date: game?.game_date || new Date().toISOString().split("T")[0],
+        timeRemaining: game?.time_remaining || game?.timeRemaining || "",
+        homeOdds: game?.home_odds || game?.homeOdds || "",
+        awayOdds: game?.away_odds || game?.awayOdds || "",
+        startTime: game?.start_time || game?.startTime || "",
+        date: game?.game_date || game?.date || new Date().toISOString().split("T")[0],
         status: game?.status || "scheduled",
+        venue: game?.venue || "",
+        broadcast: game?.broadcast || "",
       }))
     : []
 
@@ -215,14 +219,14 @@ export default function ChatInterface() {
   // Quick chat options organized by category
   const quickChatOptions: Record<QuickChatCategory, string[]> = {
     General: [
-      "Show me value plays for NBA tonight",
-      "Who's the best player to bet on for points tonight?",
-      "Analyze Lakers vs Nuggets matchup",
+      "Show me today's NBA games",
+      "What games are on tomorrow?",
+      "Show me upcoming games this week",
+      "Who's playing tonight?",
       "Show me live scores",
       "What are the top trending props?",
       "Show me the latest injury report",
       "What's your highest confidence pick today?",
-      "Show me upcoming games",
     ],
     Analysis: [
       "Compare LeBron vs Jokić stats",
@@ -354,6 +358,65 @@ export default function ChatInterface() {
       // Safe string operations with null checks
       const messageLower = messageToSend?.toLowerCase() || ""
 
+      // Enhanced game queries with real schedule data
+      if (messageLower.includes("tomorrow") || messageLower.includes("upcoming") || messageLower.includes("next")) {
+        setMessages((prev) => prev.filter((m) => m.id !== "typing"))
+
+        const upcomingGames = liveGames.filter((game) => {
+          const gameDate = new Date(game.date)
+          const tomorrow = new Date()
+          tomorrow.setDate(tomorrow.getDate() + 1)
+          return gameDate.toDateString() === tomorrow.toDateString() || game.status === "scheduled"
+        })
+
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: Date.now().toString(),
+            content:
+              upcomingGames.length > 0 ? "Here are the upcoming NBA games:" : "Here are the next scheduled games:",
+            sender: "bot",
+            timestamp: new Date(),
+            type: "live-game",
+            data: {
+              games: upcomingGames.length > 0 ? upcomingGames : liveGames.filter((g) => g.status === "scheduled"),
+            },
+          },
+        ])
+        setIsProcessing(false)
+        return
+      }
+
+      if (
+        messageLower.includes("today") ||
+        messageLower.includes("tonight") ||
+        messageLower.includes("who's playing")
+      ) {
+        setMessages((prev) => prev.filter((m) => m.id !== "typing"))
+
+        const todaysGames = liveGames.filter((game) => {
+          const gameDate = new Date(game.date)
+          const today = new Date()
+          return gameDate.toDateString() === today.toDateString()
+        })
+
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: Date.now().toString(),
+            content: todaysGames.length > 0 ? "Here are today's NBA games:" : "Here are the current games:",
+            sender: "bot",
+            timestamp: new Date(),
+            type: "live-game",
+            data: {
+              games: todaysGames.length > 0 ? todaysGames : liveGames,
+            },
+          },
+        ])
+        setIsProcessing(false)
+        return
+      }
+
       // Special commands for showing games and value props using real data
       if (messageLower.includes("live") || messageLower.includes("score")) {
         setMessages((prev) => prev.filter((m) => m.id !== "typing"))
@@ -368,26 +431,6 @@ export default function ChatInterface() {
             type: "live-game",
             data: {
               games: liveGames.filter((game) => game.status === "live"),
-            },
-          },
-        ])
-        setIsProcessing(false)
-        return
-      }
-
-      if (messageLower.includes("upcoming games")) {
-        setMessages((prev) => prev.filter((m) => m.id !== "typing"))
-
-        setMessages((prev) => [
-          ...prev,
-          {
-            id: Date.now().toString(),
-            content: "Here are the upcoming games:",
-            sender: "bot",
-            timestamp: new Date(),
-            type: "live-game",
-            data: {
-              games: liveGames.filter((game) => game.status === "scheduled"),
             },
           },
         ])
