@@ -119,7 +119,7 @@ type QuickChatCategory = "General" | "Analysis" | "Props" | "Games" | "Trends" |
 export default function ChatInterface() {
   const router = useRouter()
 
-  // Real-time data hooks
+  // Real-time data hooks with proper error handling
   const { data: realTimeData, loading: dataLoading, refresh: refreshData } = useRealTimeData("all", "NBA")
 
   // State
@@ -157,7 +157,29 @@ export default function ChatInterface() {
   const [expandedQuickChat, setExpandedQuickChat] = useState(false)
   const [showCategoryDropdown, setShowCategoryDropdown] = useState(false)
 
-  // Convert real-time data to component format with proper null checks
+  // Debug real-time data flow
+  useEffect(() => {
+    if (realTimeData) {
+      console.log("🔄 Real-time data received in frontend:", {
+        games: realTimeData?.games?.length || 0,
+        props: realTimeData?.props?.length || 0,
+        injuries: realTimeData?.injuries?.length || 0,
+        news: realTimeData?.news?.length || 0,
+        source: realTimeData?.source || "unknown",
+        timestamp: realTimeData?.timestamp || "unknown",
+      })
+
+      // Log sample data to verify it's flowing correctly
+      if (realTimeData?.games?.length > 0) {
+        console.log("🏀 Sample game data:", realTimeData.games[0])
+      }
+      if (realTimeData?.news?.length > 0) {
+        console.log("📰 Sample news data:", realTimeData.news[0])
+      }
+    }
+  }, [realTimeData])
+
+  // Convert real-time data to component format with enhanced error handling
   const liveGames = Array.isArray(realTimeData?.games)
     ? realTimeData.games.map((game: any) => ({
         id: game?.id || `game-${Math.random()}`,
@@ -313,9 +335,9 @@ export default function ChatInterface() {
     const startSync = async () => {
       try {
         await fetch("/api/start-sync", { method: "POST" })
-        console.log("Data sync started")
+        console.log("✅ Data sync started successfully")
       } catch (error) {
-        console.error("Failed to start data sync:", error)
+        console.error("❌ Failed to start data sync:", error)
       }
     }
 
@@ -362,11 +384,18 @@ export default function ChatInterface() {
       if (messageLower.includes("tomorrow") || messageLower.includes("upcoming") || messageLower.includes("next")) {
         setMessages((prev) => prev.filter((m) => m.id !== "typing"))
 
+        const tomorrow = new Date()
+        tomorrow.setDate(tomorrow.getDate() + 1)
+        const tomorrowStr = tomorrow.toISOString().split("T")[0]
+
         const upcomingGames = liveGames.filter((game) => {
-          const gameDate = new Date(game.date)
-          const tomorrow = new Date()
-          tomorrow.setDate(tomorrow.getDate() + 1)
-          return gameDate.toDateString() === tomorrow.toDateString() || game.status === "scheduled"
+          return game.date >= tomorrowStr || game.status === "scheduled"
+        })
+
+        console.log("🔍 Filtering upcoming games:", {
+          totalGames: liveGames.length,
+          upcomingGames: upcomingGames.length,
+          tomorrowDate: tomorrowStr,
         })
 
         setMessages((prev) => [
@@ -374,7 +403,9 @@ export default function ChatInterface() {
           {
             id: Date.now().toString(),
             content:
-              upcomingGames.length > 0 ? "Here are the upcoming NBA games:" : "Here are the next scheduled games:",
+              upcomingGames.length > 0
+                ? `Here are the upcoming NBA games (${upcomingGames.length} games found):`
+                : "Here are the next scheduled games:",
             sender: "bot",
             timestamp: new Date(),
             type: "live-game",
@@ -394,17 +425,25 @@ export default function ChatInterface() {
       ) {
         setMessages((prev) => prev.filter((m) => m.id !== "typing"))
 
+        const today = new Date().toISOString().split("T")[0]
         const todaysGames = liveGames.filter((game) => {
-          const gameDate = new Date(game.date)
-          const today = new Date()
-          return gameDate.toDateString() === today.toDateString()
+          return game.date === today
+        })
+
+        console.log("🔍 Filtering today's games:", {
+          totalGames: liveGames.length,
+          todaysGames: todaysGames.length,
+          todayDate: today,
         })
 
         setMessages((prev) => [
           ...prev,
           {
             id: Date.now().toString(),
-            content: todaysGames.length > 0 ? "Here are today's NBA games:" : "Here are the current games:",
+            content:
+              todaysGames.length > 0
+                ? `Here are today's NBA games (${todaysGames.length} games found):`
+                : "Here are the current games:",
             sender: "bot",
             timestamp: new Date(),
             type: "live-game",
@@ -421,16 +460,18 @@ export default function ChatInterface() {
       if (messageLower.includes("live") || messageLower.includes("score")) {
         setMessages((prev) => prev.filter((m) => m.id !== "typing"))
 
+        const liveOnlyGames = liveGames.filter((game) => game.status === "live")
+
         setMessages((prev) => [
           ...prev,
           {
             id: Date.now().toString(),
-            content: "Here are the current live games with real-time data:",
+            content: `Here are the current live games (${liveOnlyGames.length} live games):`,
             sender: "bot",
             timestamp: new Date(),
             type: "live-game",
             data: {
-              games: liveGames.filter((game) => game.status === "live"),
+              games: liveOnlyGames,
             },
           },
         ])
@@ -445,7 +486,7 @@ export default function ChatInterface() {
           ...prev,
           {
             id: Date.now().toString(),
-            content: "Here's the latest real-time injury report:",
+            content: `Here's the latest real-time injury report (${injuries.length} players):`,
             sender: "bot",
             timestamp: new Date(),
             type: "injury-report",
@@ -465,7 +506,7 @@ export default function ChatInterface() {
           ...prev,
           {
             id: Date.now().toString(),
-            content: "Here are the latest news updates:",
+            content: `Here are the latest news updates (${newsItems.length} articles):`,
             sender: "bot",
             timestamp: new Date(),
             type: "news-update",
@@ -485,7 +526,7 @@ export default function ChatInterface() {
           ...prev,
           {
             id: Date.now().toString(),
-            content: "Here are the trending props from PrizePicks right now:",
+            content: `Here are the trending props from PrizePicks right now (${trendingProps.length} props):`,
             sender: "bot",
             timestamp: new Date(),
             type: "trending-props",
@@ -1122,7 +1163,7 @@ export default function ChatInterface() {
                 <div className="mt-2 text-sm text-gray-300">{item.content}</div>
                 <div className="mt-2 flex justify-between items-center text-xs text-gray-400">
                   <span>{item.source}</span>
-                  <span>{item.date}</span>
+                  <span>{new Date(item.date).toLocaleDateString()}</span>
                 </div>
               </div>
             ))}
@@ -1550,19 +1591,94 @@ export default function ChatInterface() {
         </div>
       </div>
 
+      {/* Enhanced Mobile-Optimized Modals */}
       {/* Player Detail Modal */}
       <Dialog open={showPlayerModal} onOpenChange={setShowPlayerModal}>
-        <DialogContent className="bg-gray-900 text-white border border-gray-700 rounded-lg w-[95vw] max-w-3xl mx-auto z-50">
-          <DialogHeader>
+        <DialogContent className="bg-gray-900 text-white border border-gray-700 rounded-lg w-[95vw] h-[90vh] max-w-none mx-auto z-50 p-0 overflow-hidden">
+          <DialogHeader className="p-4 border-b border-gray-700">
             <DialogTitle>Player Analysis</DialogTitle>
           </DialogHeader>
-          {selectedPlayer && <PlayerDetailCard playerName={selectedPlayer} onClose={() => setShowPlayerModal(false)} />}
+          <div className="flex-1 overflow-y-auto p-4">
+            {selectedPlayer && (
+              <PlayerDetailCard playerName={selectedPlayer} onClose={() => setShowPlayerModal(false)} />
+            )}
+          </div>
         </DialogContent>
       </Dialog>
 
-      {/* Share Dialog */}
+      {/* News Dialog - Mobile Optimized */}
+      <Dialog open={showNewsDialog} onOpenChange={setShowNewsDialog}>
+        <DialogContent className="bg-gray-900 text-white border border-gray-700 rounded-lg w-[95vw] h-[80vh] max-w-none mx-auto z-50 p-0 overflow-hidden">
+          <DialogHeader className="p-4 border-b border-gray-700">
+            <DialogTitle>Latest NBA News</DialogTitle>
+          </DialogHeader>
+          <div className="flex-1 overflow-y-auto p-4 space-y-4">
+            {newsItems.map((item) => (
+              <div key={item.id} className="bg-gray-800 rounded-lg p-4 border border-gray-700">
+                <div className="flex justify-between items-start mb-2">
+                  <div className="font-bold text-sm">{item.title}</div>
+                  <Badge
+                    className={
+                      item.impact === "positive"
+                        ? "bg-green-500"
+                        : item.impact === "negative"
+                          ? "bg-red-500"
+                          : "bg-gray-500"
+                    }
+                  >
+                    {item.impact}
+                  </Badge>
+                </div>
+                <div className="text-sm text-gray-300 mb-2">{item.content}</div>
+                <div className="text-xs text-gray-400 flex justify-between">
+                  <span>{item.source}</span>
+                  <span>{new Date(item.date).toLocaleDateString()}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Injury Dialog - Mobile Optimized */}
+      <Dialog open={showInjuryDialog} onOpenChange={setShowInjuryDialog}>
+        <DialogContent className="bg-gray-900 text-white border border-gray-700 rounded-lg w-[95vw] h-[80vh] max-w-none mx-auto z-50 p-0 overflow-hidden">
+          <DialogHeader className="p-4 border-b border-gray-700">
+            <DialogTitle>NBA Injury Report</DialogTitle>
+          </DialogHeader>
+          <div className="flex-1 overflow-y-auto p-4 space-y-4">
+            {injuries.map((injury) => (
+              <div key={injury.id} className="bg-gray-800 rounded-lg p-4 border border-gray-700">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center">
+                    <span className="font-bold">{injury.playerName}</span>
+                    <span className="text-gray-400 text-sm ml-2">{injury.team}</span>
+                  </div>
+                  <Badge
+                    className={
+                      injury.status === "Out"
+                        ? "bg-red-500"
+                        : injury.status === "Questionable"
+                          ? "bg-yellow-500"
+                          : injury.status === "Doubtful"
+                            ? "bg-orange-500"
+                            : "bg-green-500"
+                    }
+                  >
+                    {injury.status}
+                  </Badge>
+                </div>
+                <div className="text-sm text-gray-300 mb-1">{injury.injury}</div>
+                <div className="text-sm text-gray-400">{injury.notes}</div>
+              </div>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Other Mobile-Optimized Modals */}
       <Dialog open={showShareDialog} onOpenChange={setShowShareDialog}>
-        <DialogContent className="bg-gray-900 text-white border border-gray-700 rounded-lg w-[95vw] max-w-md mx-auto z-50">
+        <DialogContent className="bg-gray-900 text-white border border-gray-700 rounded-lg w-[90vw] max-w-sm mx-auto z-50">
           <DialogHeader>
             <DialogTitle>Share Analysis</DialogTitle>
           </DialogHeader>
@@ -1570,9 +1686,8 @@ export default function ChatInterface() {
         </DialogContent>
       </Dialog>
 
-      {/* Export Dialog */}
       <Dialog open={showExportDialog} onOpenChange={setShowExportDialog}>
-        <DialogContent className="bg-gray-900 text-white border border-gray-700 rounded-lg w-[95vw] max-w-md mx-auto z-50">
+        <DialogContent className="bg-gray-900 text-white border border-gray-700 rounded-lg w-[90vw] max-w-sm mx-auto z-50">
           <DialogHeader>
             <DialogTitle>Export to PrizePicks</DialogTitle>
           </DialogHeader>
@@ -1580,9 +1695,8 @@ export default function ChatInterface() {
         </DialogContent>
       </Dialog>
 
-      {/* Filter Dialog */}
       <Dialog open={showFilterDialog} onOpenChange={setShowFilterDialog}>
-        <DialogContent className="bg-gray-900 text-white border border-gray-700 rounded-lg w-[95vw] max-w-md mx-auto z-50">
+        <DialogContent className="bg-gray-900 text-white border border-gray-700 rounded-lg w-[90vw] max-w-sm mx-auto z-50">
           <DialogHeader>
             <DialogTitle>Filter Options</DialogTitle>
           </DialogHeader>
@@ -1590,62 +1704,13 @@ export default function ChatInterface() {
         </DialogContent>
       </Dialog>
 
-      {/* News Dialog */}
-      <Dialog open={showNewsDialog} onOpenChange={setShowNewsDialog}>
-        <DialogContent className="bg-gray-900 text-white border border-gray-700 rounded-lg w-[95vw] max-w-md mx-auto z-50">
-          <DialogHeader>
-            <DialogTitle>Latest News</DialogTitle>
-          </DialogHeader>
-          {newsItems.map((item) => (
-            <div key={item.id} className="mb-4">
-              <div className="font-bold">{item.title}</div>
-              <div className="text-sm text-gray-300">{item.content}</div>
-              <div className="text-xs text-gray-400">
-                {item.source} - {item.date}
-              </div>
-            </div>
-          ))}
-        </DialogContent>
-      </Dialog>
-
-      {/* Injury Dialog */}
-      <Dialog open={showInjuryDialog} onOpenChange={setShowInjuryDialog}>
-        <DialogContent className="bg-gray-900 text-white border border-gray-700 rounded-lg w-[95vw] max-w-md mx-auto z-50">
-          <DialogHeader>
-            <DialogTitle>Injury Report</DialogTitle>
-          </DialogHeader>
-          {injuries.map((injury) => (
-            <div key={injury.id} className="mb-4">
-              <div className="flex items-center">
-                <span className="font-bold">{injury.playerName}</span>
-                <span className="text-gray-400 text-sm ml-2">{injury.team}</span>
-                <Badge
-                  className={
-                    injury.status === "Out"
-                      ? "bg-red-500 ml-2"
-                      : injury.status === "Questionable"
-                        ? "bg-yellow-500 ml-2"
-                        : injury.status === "Doubtful"
-                          ? "bg-orange-500 ml-2"
-                          : "bg-green-500 ml-2"
-                  }
-                >
-                  {injury.status}
-                </Badge>
-              </div>
-              <div className="text-sm text-gray-300 mt-1">{injury.notes}</div>
-            </div>
-          ))}
-        </DialogContent>
-      </Dialog>
-
-      {/* Parlay Builder Dialog */}
+      {/* Parlay Builder Dialog - Mobile Optimized */}
       <Dialog open={showParlayBuilder} onOpenChange={setShowParlayBuilder}>
-        <DialogContent className="bg-gray-900 text-white border border-gray-700 rounded-lg w-[95vw] max-w-lg mx-auto z-50">
-          <DialogHeader>
+        <DialogContent className="bg-gray-900 text-white border border-gray-700 rounded-lg w-[95vw] h-[85vh] max-w-none mx-auto z-50 p-0 overflow-hidden">
+          <DialogHeader className="p-4 border-b border-gray-700">
             <DialogTitle>Parlay Builder</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4">
+          <div className="flex-1 overflow-y-auto p-4 space-y-4">
             <div className="bg-gray-800 p-3 rounded-lg">
               <h3 className="font-medium mb-2">Selected Props</h3>
               <div className="space-y-2">
@@ -1692,13 +1757,13 @@ export default function ChatInterface() {
         </DialogContent>
       </Dialog>
 
-      {/* Trending Props Dialog */}
+      {/* Trending Props Dialog - Mobile Optimized */}
       <Dialog open={showTrendingProps} onOpenChange={setShowTrendingProps}>
-        <DialogContent className="bg-gray-900 text-white border border-gray-700 rounded-lg w-[95vw] max-w-lg mx-auto z-50">
-          <DialogHeader>
+        <DialogContent className="bg-gray-900 text-white border border-gray-700 rounded-lg w-[95vw] h-[85vh] max-w-none mx-auto z-50 p-0 overflow-hidden">
+          <DialogHeader className="p-4 border-b border-gray-700">
             <DialogTitle>Trending Props</DialogTitle>
           </DialogHeader>
-          <div className="space-y-3">
+          <div className="flex-1 overflow-y-auto p-4 space-y-3">
             {trendingProps.map((prop) => (
               <div
                 key={prop.id}
