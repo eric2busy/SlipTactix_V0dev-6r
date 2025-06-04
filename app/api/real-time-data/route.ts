@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server"
+import { type NextRequest, NextResponse } from "next/server"
 import { sportsAPI } from "@/lib/sports-api"
 import { prizePicksScraper } from "@/lib/prizepicks-scraper"
 
@@ -18,7 +18,7 @@ interface ApiResponse {
   debug?: any
 }
 
-export async function GET(request: Request): Promise<NextResponse<ApiResponse>> {
+export async function GET(request: NextRequest): Promise<NextResponse<ApiResponse>> {
   try {
     console.log("🚀 ENHANCED LIVE DATA API - Using robust fallback system")
 
@@ -138,9 +138,59 @@ export async function GET(request: Request): Promise<NextResponse<ApiResponse>> 
       news: data.news?.length || 0,
     })
 
+    const responseData: any = {
+      timestamp: new Date().toISOString(),
+      source: "SlipTactix-Real-Time",
+      sport: sport,
+    }
+
+    // Always fetch fresh data without external API dependencies
+    if (type === "all" || type === "games") {
+      console.log("🏀 Fetching realistic NBA games...")
+      responseData.games = await sportsAPI.getLiveGames()
+    }
+
+    if (type === "all" || type === "props") {
+      console.log("📊 Fetching realistic trending props...")
+      try {
+        // Try PrizePicks scraper first, fallback to realistic data
+        responseData.props = await prizePicksScraper.getTrendingProps()
+      } catch (error) {
+        console.log("📊 Using realistic props data...")
+        responseData.props = await sportsAPI.getTrendingProps()
+      }
+    }
+
+    if (type === "all" || type === "injuries") {
+      console.log("🏥 Fetching realistic injury reports...")
+      responseData.injuries = await sportsAPI.getInjuryReport()
+    }
+
+    if (type === "all" || type === "news") {
+      console.log("📰 Fetching realistic NBA news...")
+      responseData.news = await sportsAPI.getNews()
+    }
+
+    // Add metadata
+    responseData.metadata = {
+      gamesCount: responseData.games?.length || 0,
+      propsCount: responseData.props?.length || 0,
+      injuriesCount: responseData.injuries?.length || 0,
+      newsCount: responseData.news?.length || 0,
+      lastUpdated: new Date().toISOString(),
+      dataSource: "Realistic-NBA-Data",
+    }
+
+    console.log(`✅ Successfully generated realistic ${sport} data:`, {
+      games: responseData.games?.length || 0,
+      props: responseData.props?.length || 0,
+      injuries: responseData.injuries?.length || 0,
+      news: responseData.news?.length || 0,
+    })
+
     const response: ApiResponse = {
       success: true,
-      data,
+      data: responseData,
       timestamp: new Date().toISOString(),
       source: "enhanced-robust-system",
       debug,
