@@ -8,9 +8,11 @@ import { cn } from "@/lib/utils"
 interface SideMenuProps {
   isOpen: boolean
   onClose: () => void
+  realTimeData?: any
+  dataLoading?: boolean
 }
 
-export default function SideMenu({ isOpen, onClose }: SideMenuProps) {
+export default function SideMenu({ isOpen, onClose, realTimeData, dataLoading }: SideMenuProps) {
   const [activeTab, setActiveTab] = useState<"account" | "settings" | "help" | "favorites" | "history" | "about">(
     "account",
   )
@@ -23,6 +25,15 @@ export default function SideMenu({ isOpen, onClose }: SideMenuProps) {
     { id: "help", label: "Help", icon: HelpCircle },
     { id: "about", label: "About", icon: Info },
   ]
+
+  // Determine data status
+  const hasRealData =
+    realTimeData &&
+    ((realTimeData.games && realTimeData.games.length > 0) ||
+      (realTimeData.props && realTimeData.props.length > 0) ||
+      (realTimeData.news && realTimeData.news.length > 0))
+
+  const isDataActive = !dataLoading && hasRealData
 
   return (
     <AnimatePresence>
@@ -147,6 +158,43 @@ export default function SideMenu({ isOpen, onClose }: SideMenuProps) {
                     <button className="text-left w-full p-3 bg-gray-800 rounded-lg hover:bg-gray-700 transition-colors">
                       <p className="font-medium">Tutorial</p>
                       <p className="text-xs text-gray-400 mt-1">Learn how to use SLIPTACTIX</p>
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {activeTab === "about" && (
+                <div className="space-y-4">
+                  <h3 className="font-medium text-lg">About</h3>
+                  <div className="space-y-3">
+                    <div className="bg-gray-800 p-3 rounded-lg">
+                      <p className="font-medium">SLIPTACTIX</p>
+                      <p className="text-xs text-gray-400 mt-1">Version 1.2.0</p>
+                    </div>
+
+                    {/* Live Data Status */}
+                    <div className="bg-gray-800 p-3 rounded-lg">
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className={`w-2 h-2 rounded-full ${isDataActive ? "bg-green-500" : "bg-red-500"}`} />
+                        <span className="font-medium">{isDataActive ? "Live Data Active" : "Live Data Inactive"}</span>
+                      </div>
+                      <div className="text-xs text-gray-400 space-y-1">
+                        <div>• Real-time NBA games from ESPN</div>
+                        <div>• Live props from PrizePicks</div>
+                        <div>• Current injury reports</div>
+                        <div>• Breaking news updates</div>
+                        {dataLoading && <div className="text-yellow-400">• Syncing data...</div>}
+                        {!isDataActive && !dataLoading && <div className="text-red-400">• No real data available</div>}
+                      </div>
+                    </div>
+
+                    <button className="text-left w-full p-3 bg-gray-800 rounded-lg hover:bg-gray-700 transition-colors">
+                      <p className="font-medium">Privacy Policy</p>
+                      <p className="text-xs text-gray-400 mt-1">How we protect your data</p>
+                    </button>
+                    <button className="text-left w-full p-3 bg-gray-800 rounded-lg hover:bg-gray-700 transition-colors">
+                      <p className="font-medium">Terms of Service</p>
+                      <p className="text-xs text-gray-400 mt-1">Usage terms and conditions</p>
                     </button>
                   </div>
                 </div>

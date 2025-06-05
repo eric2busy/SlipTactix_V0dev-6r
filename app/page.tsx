@@ -34,7 +34,6 @@ import { SportTab } from "@/components/sport-tab"
 import { QuickActionButton } from "@/components/quick-action-button"
 import { PropsList } from "@/components/props-list"
 import { FavoritesList } from "@/components/favorites-list"
-import { RealTimeStatus } from "@/components/real-time-status"
 import { useRealTimeData } from "@/hooks/useRealTimeData"
 
 // Types
@@ -1398,11 +1397,6 @@ export default function ChatInterface() {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <RealTimeStatus
-            lastUpdated={realTimeData?.timestamp ? new Date(realTimeData.timestamp) : null}
-            onRefresh={refreshData}
-          />
-
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
@@ -1443,7 +1437,12 @@ export default function ChatInterface() {
       </header>
 
       {/* Side Menu */}
-      <SideMenu isOpen={showSideMenu} onClose={() => setShowSideMenu(false)} />
+      <SideMenu
+        isOpen={showSideMenu}
+        onClose={() => setShowSideMenu(false)}
+        realTimeData={realTimeData}
+        dataLoading={dataLoading}
+      />
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden">
@@ -1612,7 +1611,7 @@ export default function ChatInterface() {
                 }
               }}
               onKeyDown={handleKeyDown}
-              placeholder="ask about real data only"
+              placeholder="ask anything"
               className="w-full bg-gray-800 rounded-full py-3 px-4 pr-12 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#b8562f] transition-shadow"
             />
             <button
