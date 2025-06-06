@@ -28,7 +28,7 @@ export function NewsCard({ news, title = "Latest NBA news:", onNewsClick }: News
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
-      className="bg-[rgba(184,86,47,0.15)] rounded-[20px] p-5 w-full max-w-[400px]"
+      className="bg-[rgba(184,86,47,0.15)] rounded-[20px] p-5 w-full"
     >
       <h3 className="text-white text-xl font-normal leading-[130.94%] mb-5">{title}</h3>
 

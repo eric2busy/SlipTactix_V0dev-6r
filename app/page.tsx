@@ -939,9 +939,11 @@ export default function ChatInterface() {
     // Render news cards
     if (message.type === "news-update" && message.data?.news) {
       return (
-        <div>
+        <div className="w-full">
           <p className="mb-3">{message.content}</p>
-          <NewsCard news={message.data.news} title="" onNewsClick={(news) => console.log("News clicked:", news)} />
+          <div className="w-full">
+            <NewsCard news={message.data.news} title="" onNewsClick={(news) => console.log("News clicked:", news)} />
+          </div>
         </div>
       )
     }
@@ -950,9 +952,9 @@ export default function ChatInterface() {
   }
 
   return (
-    <div className="flex flex-col h-screen bg-[#1F1F1F] text-white safe-area-inset">
+    <div className="flex flex-col h-screen bg-[#1F1F1F] text-white">
       {/* Header */}
-      <header className="flex justify-between items-center p-4 ios-header clean-interface">
+      <header className="ios-header flex justify-between items-center px-4 clean-interface">
         <div className="flex items-center gap-3">
           <div className="h-8">
             <Image
@@ -1023,9 +1025,9 @@ export default function ChatInterface() {
       />
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flexible-layout">
         {/* Chat Container */}
-        <div className="flex-1 flex flex-col overflow-y-auto p-4 space-y-4">
+        <div className="content-container p-4 space-y-4">
           {messages.map((message) => (
             <div
               key={message.id}
@@ -1114,14 +1116,9 @@ export default function ChatInterface() {
           </div>
         </div>
 
-        {/* Input Area with Gradient Background */}
-        <div
-          className="p-4 pb-safe clean-interface relative"
-          style={{
-            background: "linear-gradient(180deg, rgba(0, 0, 0, 0) 0%, rgba(184, 86, 47, 0.15) 100%)",
-          }}
-        >
-          <div className="relative flex items-center gap-4">
+        {/* Input Area with Extended Gradient Background */}
+        <div className="input-gradient">
+          <div className="relative flex items-center gap-4 px-4 py-3">
             {/* Attachment Button */}
             <button
               className="p-2 text-gray-400 hover:text-white bg-white/15 rounded-full transition-colors flex-shrink-0"

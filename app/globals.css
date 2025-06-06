@@ -105,23 +105,24 @@ body {
 
 /* Enhanced PWA Safe Area Support for iPhone */
 .safe-area-inset {
-  padding-top: max(env(safe-area-inset-top), 20px);
-  padding-bottom: max(env(safe-area-inset-bottom), 20px);
+  padding-top: env(safe-area-inset-top, 0);
+  padding-bottom: env(safe-area-inset-bottom, 0);
 }
 
 .pt-safe {
-  padding-top: max(env(safe-area-inset-top), 20px);
+  padding-top: env(safe-area-inset-top, 0);
 }
 
 .pb-safe {
-  padding-bottom: max(env(safe-area-inset-bottom), 20px);
+  padding-bottom: env(safe-area-inset-bottom, 0);
 }
 
 /* iPhone specific header positioning */
-@supports (padding: max(0px)) {
-  .ios-header {
-    padding-top: max(env(safe-area-inset-top), 44px);
-  }
+.ios-header {
+  padding-top: env(safe-area-inset-top, 0);
+  height: calc(56px + env(safe-area-inset-top, 0));
+  display: flex;
+  align-items: flex-end;
 }
 
 /* Ensure full height on mobile */
@@ -148,4 +149,32 @@ body {
 
 .hide-scrollbar::-webkit-scrollbar {
   display: none;
+}
+
+/* Full-width card components */
+.full-width-card {
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+/* Extended gradient for input area */
+.input-gradient {
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0) 0%, rgba(184, 86, 47, 0.15) 100%);
+  padding-bottom: max(env(safe-area-inset-bottom, 16px), 16px);
+  margin-bottom: -1px; /* Prevent any gap at bottom */
+}
+
+/* Flexible layout for different device sizes */
+.flexible-layout {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  flex: 1;
+}
+
+/* Ensure content is properly spaced */
+.content-container {
+  flex: 1;
+  overflow-y: auto;
+  padding-bottom: 16px; /* Extra padding to ensure content isn't cut off */
 }
