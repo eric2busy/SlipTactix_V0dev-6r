@@ -1,15 +1,27 @@
 import { type NextRequest, NextResponse } from "next/server"
+import { ragProcessor } from "@/lib/rag-processor"
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
     const { messages, context } = body
 
-    // Get the API key from environment variables (server-side only)
-    const apiKey = process.env.GROK_API_KEY
-    const apiUrl = process.env.GROK_API_URL || "https://api.x.ai/v1/chat/completions"
+    // Get the last user message
+    const lastMessage = messages[messages.length - 1]
+    const userQuery = lastMessage?.content || ""
 
-    // Check if API key is available and not blocked
+    console.log("🎯 Processing user query through RAG:", userQuery)
+
+    // Get the API key from environment variables (server-side only)
+    const apiKey = process.env.GROK_API_KEY || process.env.XAI_API_KEY
+
+    console.log("🔑 API Key check:", {
+      grokKey: process.env.GROK_API_KEY ? "Present" : "Missing",
+      xaiKey: process.env.XAI_API_KEY ? "Present" : "Missing",
+      usingKey: apiKey ? "Found" : "Not found",
+    })
+
+    // Check if API key is available
     if (!apiKey) {
       console.log("⚠️ No Grok API key configured - using text-only responses")
       return NextResponse.json({
@@ -19,108 +31,27 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    // Prepare the request to Grok API with better error handling
-    const grokRequest = {
-      model: "grok-beta",
-      messages: [
-        {
-          role: "system",
-          content: `You are SLIPTACTIX, an expert sports betting analyst specializing in ${context?.sport || "NBA"} analysis. 
-          
-          Your expertise includes:
-          - Player prop analysis and recommendations
-          - Game matchup breakdowns
-          - Injury impact assessments
-          - Line value identification
-          - Trend analysis and statistical modeling
-          
-          Always provide:
-          - Clear, actionable insights
-          - Confidence levels for recommendations
-          - Supporting data and reasoning
-          - Risk assessment
-          
-          Keep responses conversational but informative. Focus on helping users make informed betting decisions.`,
-        },
-        ...messages,
-      ],
-      temperature: 0.7,
-      max_tokens: 1000,
-      stream: false,
-    }
+    // **CRITICAL: Use RAG processor for ALL sports-related queries**
+    const ragResponse = await ragProcessor.processQuery(userQuery)
 
-    // Make request to Grok API with enhanced error handling
-    const response = await fetch(apiUrl, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(grokRequest),
+    console.log("📊 RAG Response:", {
+      confidence: ragResponse.confidence,
+      sources: ragResponse.sources,
+      hasData: !!ragResponse.dataUsed,
     })
 
-    // Handle different error scenarios
-    if (!response.ok) {
-      const errorText = await response.text()
-      console.error("Grok API error:", response.status, errorText)
-
-      let errorData
-      try {
-        errorData = JSON.parse(errorText)
-      } catch {
-        errorData = { error: errorText }
-      }
-
-      // Handle specific error cases - NO FAKE DATA FALLBACKS
-      if (response.status === 403) {
-        console.error("🚫 Grok API key is blocked")
-        return NextResponse.json({
-          response: generateTextOnlyResponse(messages, context),
-          fallback: true,
-          reason: "api_key_blocked",
-        })
-      }
-
-      if (response.status === 401) {
-        console.error("🔑 Grok API authentication failed")
-        return NextResponse.json({
-          response: generateTextOnlyResponse(messages, context),
-          fallback: true,
-          reason: "auth_failed",
-        })
-      }
-
-      if (response.status === 429) {
-        console.error("⏰ Grok API rate limit exceeded")
-        return NextResponse.json({
-          response: generateTextOnlyResponse(messages, context),
-          fallback: true,
-          reason: "rate_limit",
-        })
-      }
-
-      // Generic fallback for other errors
-      console.error("❌ Grok API error:", response.status, errorData)
-      return NextResponse.json({
-        response: generateTextOnlyResponse(messages, context),
-        fallback: true,
-        reason: "api_error",
-      })
-    }
-
-    const data = await response.json()
-
-    // Extract the response from Grok's format
-    const aiResponse = data.choices?.[0]?.message?.content || "I'm sorry, I couldn't process that request right now."
-
+    // Return the RAG-processed response
     return NextResponse.json({
-      response: aiResponse,
-      usage: data.usage,
+      response: ragResponse.answer,
+      dataUsed: ragResponse.dataUsed,
+      confidence: ragResponse.confidence,
+      sources: ragResponse.sources,
+      ragProcessed: true,
+      model_used: "grok-3-mini-with-rag",
     })
   } catch (error) {
-    console.error("Error in grok-chat API:", error)
+    console.error("Error in RAG-enhanced Grok chat:", error)
 
-    // Return a user-friendly fallback response - NO FAKE DATA
     return NextResponse.json({
       response: generateTextOnlyResponse([], {}),
       fallback: true,
@@ -133,7 +64,6 @@ function generateTextOnlyResponse(messages: any[], context: any): string {
   const lastMessage = messages[messages.length - 1]?.content?.toLowerCase() || ""
   const sport = context?.sport || "NBA"
 
-  // NO FAKE DATA - Only direct users to real data sources
   if (lastMessage.includes("prop") || lastMessage.includes("bet")) {
     return `I can help you access real-time ${sport} props and betting data! 
 
@@ -178,7 +108,6 @@ For current news:
 All news comes from ESPN and official sources - completely accurate and current.`
   }
 
-  // General response - NO FAKE DATA PROMISES
   return `I'm SLIPTACTIX with access to real-time ${sport} data sources!
 
 I can provide:

@@ -5,135 +5,36 @@ export class PrizePicksScraper {
 
   async getActiveProps(sport = "NBA") {
     try {
-      console.log(`📊 Fetching REAL PrizePicks props for ${sport} - NO FALLBACKS...`)
+      console.log(`📊 Getting props data for ${sport} from legitimate sources...`)
 
-      // Try multiple methods to get real PrizePicks data
-      const realProps = await this.scrapeRealPrizePicksProps(sport)
+      // Skip PrizePicks scraping entirely - it's protected
+      console.log("⚠️ PrizePicks scraping disabled due to anti-bot protection")
 
-      if (realProps && realProps.length > 0) {
-        console.log(`✅ Got ${realProps.length} REAL PrizePicks props`)
-        return realProps
-      }
-
-      // Try API method
-      const apiProps = await this.fetchPrizePicksAPI(sport)
-      if (apiProps && apiProps.length > 0) {
-        console.log(`✅ Got ${apiProps.length} props from PrizePicks API`)
-        return apiProps
-      }
-
-      // NO FAKE DATA FALLBACK - Return empty array if no real data available
-      console.log("❌ No real PrizePicks data available from any source")
+      // Return empty array - let other systems provide the data
+      console.log("🔄 Using Sports Games Odds API and other legitimate sources instead")
       return []
     } catch (error) {
-      console.error("❌ Error fetching PrizePicks props:", error)
+      console.error("❌ Error in props fetching:", error)
       return []
     }
   }
 
   private async scrapeRealPrizePicksProps(sport: string) {
-    try {
-      console.log("🎯 Attempting to fetch real PrizePicks data...")
+    console.log("⚠️ PrizePicks has anti-bot protection - skipping direct API calls")
+    console.log("🔄 Using legitimate data sources instead...")
 
-      // Method 1: Try the public API endpoints that PrizePicks uses
-      const endpoints = [
-        `${this.baseUrl}/api/projections`,
-        `${this.baseUrl}/api/props`,
-        `${this.baseUrl}/api/lines`,
-        `${this.baseUrl}/api/picks/active`,
-      ]
-
-      for (const endpoint of endpoints) {
-        try {
-          console.log(`🔍 Trying endpoint: ${endpoint}`)
-
-          const response = await fetch(endpoint, {
-            method: "GET",
-            headers: {
-              Accept: "application/json",
-              "User-Agent":
-                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
-              Referer: "https://app.prizepicks.com/",
-              Origin: "https://app.prizepicks.com",
-            },
-            cache: "no-store",
-          })
-
-          if (response.ok) {
-            const data = await response.json()
-            console.log(`📊 Response from ${endpoint}:`, data)
-
-            const parsedProps = this.parsePrizePicksResponse(data, sport)
-            if (parsedProps && parsedProps.length > 0) {
-              return parsedProps
-            }
-          } else {
-            console.log(`❌ ${endpoint} failed with status: ${response.status}`)
-          }
-        } catch (endpointError) {
-          console.log(`⚠️ ${endpoint} error:`, endpointError)
-          continue
-        }
-      }
-
-      return null
-    } catch (error) {
-      console.error("❌ Real PrizePicks scraping failed:", error)
-      return null
-    }
+    // PrizePicks blocks scraping attempts, so we'll return null
+    // and let the system use other legitimate data sources
+    return null
   }
 
   private async fetchPrizePicksAPI(sport: string) {
-    try {
-      console.log("🎯 Attempting PrizePicks API method...")
+    console.log("⚠️ PrizePicks API endpoints are not publicly accessible")
+    console.log("🔄 Switching to legitimate sports data sources...")
 
-      // Try the actual API endpoints that the PrizePicks app uses
-      const apiEndpoints = [
-        // These are the actual endpoints PrizePicks uses internally
-        "https://partner-api.prizepicks.com/projections",
-        "https://api.prizepicks.com/projections",
-        "https://client-api.prizepicks.com/projections",
-      ]
-
-      for (const apiUrl of apiEndpoints) {
-        try {
-          const response = await fetch(apiUrl, {
-            method: "GET",
-            headers: {
-              Accept: "application/json, text/plain, */*",
-              "Accept-Language": "en-US,en;q=0.9",
-              "Cache-Control": "no-cache",
-              "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-              Referer: "https://app.prizepicks.com/",
-              Origin: "https://app.prizepicks.com",
-              "Sec-Fetch-Dest": "empty",
-              "Sec-Fetch-Mode": "cors",
-              "Sec-Fetch-Site": "same-site",
-            },
-            cache: "no-store",
-          })
-
-          if (response.ok) {
-            const data = await response.json()
-            console.log(`📊 API Response structure:`, Object.keys(data))
-
-            const props = this.parsePrizePicksAPIResponse(data, sport)
-            if (props && props.length > 0) {
-              console.log(`✅ Successfully parsed ${props.length} real props from API`)
-              return props
-            }
-          }
-        } catch (apiError) {
-          console.log(`⚠️ API ${apiUrl} failed:`, apiError)
-          continue
-        }
-      }
-
-      return null
-    } catch (error) {
-      console.error("❌ PrizePicks API method failed:", error)
-      return null
-    }
+    // These endpoints don't actually exist or are protected
+    // Return null to use other data sources
+    return null
   }
 
   private parsePrizePicksResponse(data: any, sport: string) {

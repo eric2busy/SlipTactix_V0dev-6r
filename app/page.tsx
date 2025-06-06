@@ -3,38 +3,21 @@
 import type React from "react"
 
 import { useState, useRef, useEffect } from "react"
-import {
-  Menu,
-  Send,
-  ArrowUp,
-  X,
-  BarChart2,
-  TrendingUp,
-  Bookmark,
-  Share2,
-  Download,
-  Filter,
-  ChevronDown,
-  ChevronUp,
-  Layers,
-  AlertCircle,
-} from "lucide-react"
+import { Menu, Send, ChevronUp, AlertCircle } from "lucide-react"
 import Image from "next/image"
 import { cn } from "@/lib/utils"
 import SideMenu from "@/components/side-menu"
 import { motion } from "framer-motion"
-import PlayerDetailCard from "@/components/player-detail-card"
-import { Button } from "@/components/ui/button"
 import { useRouter } from "next/navigation"
-import { Badge } from "@/components/ui/badge"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { LiveGameCard } from "@/components/live-game-card"
-import { SportTab } from "@/components/sport-tab"
 import { QuickActionButton } from "@/components/quick-action-button"
-import { PropsList } from "@/components/props-list"
-import { FavoritesList } from "@/components/favorites-list"
 import { useRealTimeData } from "@/hooks/useRealTimeData"
+import { SportsApiStatus } from "@/components/sports-api-status"
+import { GameCard } from "@/components/live-game-card"
+import { PropsCard } from "@/components/props-card"
+import { InjuryCard } from "@/components/injury-card"
+import { NewsCard } from "@/components/news-card"
 
 // Types
 type Message = {
@@ -87,6 +70,8 @@ type Game = {
   status?: "live" | "scheduled" | "final"
   venue?: string
   broadcast?: string
+  homeRecord?: string
+  awayRecord?: string
 }
 
 type News = {
@@ -158,6 +143,7 @@ export default function ChatInterface() {
   const [showFavorites, setShowFavorites] = useState(false)
   const [expandedQuickChat, setExpandedQuickChat] = useState(false)
   const [showCategoryDropdown, setShowCategoryDropdown] = useState(false)
+  const [showApiStatus, setShowApiStatus] = useState(false)
 
   // Debug real-time data flow
   useEffect(() => {
@@ -199,6 +185,8 @@ export default function ChatInterface() {
           status: game?.status || "scheduled",
           venue: game?.venue || "",
           broadcast: game?.broadcast || "",
+          homeRecord: game?.home_record || "0-0",
+          awayRecord: game?.away_record || "0-0",
         }))
       : []
 
@@ -835,6 +823,40 @@ export default function ChatInterface() {
     setShowTrendingProps(true)
   }
 
+  // AI-generated quick chat options based on context
+  const getAIQuickChatOptions = (): string[] => {
+    const baseOptions = ["Show me value picks for tonight", "What are the best props right now?", "Show me live games"]
+
+    // Add sport-specific options
+    const sportSpecific = {
+      NBA: ["Show me NBA injury reports", "Best NBA props tonight", "Live NBA scores"],
+      NFL: ["Show me NFL injury reports", "Best NFL props this week", "NFL game predictions"],
+      MLB: ["Show me MLB injury reports", "Best MLB props today", "Live MLB scores"],
+      NHL: ["Show me NHL injury reports", "Best NHL props tonight", "Live NHL scores"],
+    }
+
+    // Combine based on available data
+    const options = [...baseOptions]
+
+    if (activeSport in sportSpecific) {
+      options.push(...(sportSpecific as any)[activeSport])
+    }
+
+    // Add data-specific options if real data is available
+    if (liveGames.length > 0) {
+      options.push("Analyze today's games")
+    }
+    if (trendingProps.length > 0) {
+      options.push("Show trending props")
+    }
+    if (injuries.length > 0) {
+      options.push("Latest injury updates")
+    }
+
+    // Return shuffled selection
+    return options.sort(() => Math.random() - 0.5).slice(0, 6)
+  }
+
   // Render message content based on type - ONLY REAL DATA
   const renderMessage = (message: Message) => {
     if (message.id === "typing") {
@@ -868,511 +890,58 @@ export default function ChatInterface() {
       )
     }
 
-    if (message.type === "player-card") {
+    // Render game cards
+    if (message.type === "live-game" && message.data?.games) {
       return (
         <div>
-          <p className="mb-2">{message.content}</p>
-          <div className="bg-gray-800 p-3 rounded-lg border border-gray-700 mt-2">
-            <div className="flex items-center gap-3">
-              <div className="h-12 w-12 rounded-full bg-gray-700 overflow-hidden">
-                <Image
-                  src={`https://cdn.nba.com/headshots/nba/latest/1040x760/${Math.floor(Math.random() * 1000) + 1000}.png`}
-                  alt={message.data?.playerName || "Player"}
-                  width={48}
-                  height={48}
-                  className="object-cover"
-                />
-              </div>
-              <div>
-                <h3 className="font-bold">{message.data?.playerName || "Unknown Player"}</h3>
-                <p className="text-sm text-gray-400">LAL • SF</p>
-              </div>
-            </div>
-            <Button
-              size="sm"
-              className="mt-2 w-full bg-[#b8562f] hover:bg-[#c96a43]"
-              onClick={() => handlePlayerCardClick(message.data?.playerName || "Unknown Player")}
-            >
-              <BarChart2 className="w-4 h-4 mr-2" />
-              View Detailed Analysis
-            </Button>
-          </div>
+          <p className="mb-3">{message.content}</p>
+          <GameCard
+            games={message.data.games}
+            variant={message.data.games.length > 1 ? "multiple" : "single"}
+            title=""
+            onGameClick={(game) => console.log("Game clicked:", game)}
+            onGameDetails={(game) => console.log("Game details:", game)}
+            onViewProps={(game) => console.log("View props:", game)}
+          />
         </div>
       )
     }
 
-    if (message.type === "game-card") {
+    // Render props cards
+    if (message.type === "trending-props" && message.data?.props) {
       return (
         <div>
-          <p className="mb-2">{message.content}</p>
-          <div className="bg-gray-800 p-3 rounded-lg border border-gray-700 mt-2">
-            <div className="flex justify-between items-center">
-              <div className="flex items-center gap-2">
-                <div className="h-10 w-10 rounded-full bg-blue-600 flex items-center justify-center">
-                  <span className="font-bold text-sm">{message.data?.teams?.[0] || "T1"}</span>
-                </div>
-                <span className="font-medium">{message.data?.teams?.[0] || "Team 1"}</span>
-              </div>
-              <span className="text-sm">VS</span>
-              <div className="flex items-center gap-2">
-                <span className="font-medium">{message.data?.teams?.[1] || "Team 2"}</span>
-                <div className="h-10 w-10 rounded-full bg-red-600 flex items-center justify-center">
-                  <span className="font-bold text-sm">{message.data?.teams?.[1] || "T2"}</span>
-                </div>
-              </div>
-            </div>
-            <Button
-              size="sm"
-              className="mt-3 w-full bg-[#b8562f] hover:bg-[#c96a43]"
-              onClick={() =>
-                handleGameClick(`${message.data?.teams?.[0] || "team1"}_${message.data?.teams?.[1] || "team2"}`)
-              }
-            >
-              <BarChart2 className="w-4 h-4 mr-2" />
-              View Matchup Analysis
-            </Button>
-          </div>
+          <p className="mb-3">{message.content}</p>
+          <PropsCard
+            props={message.data.props}
+            title=""
+            onPropClick={(prop) => console.log("Prop clicked:", prop)}
+            onAddToFavorites={(prop) => addToFavorites(prop)}
+          />
         </div>
       )
     }
 
-    if (message.type === "bet-card") {
+    // Render injury cards
+    if (message.type === "injury-report" && message.data?.injuries) {
       return (
-        <div className="flex flex-col space-y-2">
-          <p>{message.content}</p>
-          <div className="space-y-3 mt-2">
-            {(message.data?.recommendations || []).map((rec: BetRecommendation) => (
-              <motion.div
-                key={rec.id}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3 }}
-                className="bg-gray-800 rounded-lg p-3 border border-gray-700 transition-all hover:border-gray-600 cursor-pointer"
-                onClick={() => handlePlayerCardClick(rec.player)}
-              >
-                <div className="flex justify-between items-start">
-                  <div>
-                    <div className="flex items-center">
-                      <span className="font-bold">{rec.player}</span>
-                      <span className="text-gray-400 text-sm ml-2">{rec.team}</span>
-                    </div>
-                    <div className="text-sm mt-1">
-                      <span className="text-gray-300">{rec.prop}</span>
-                      <span className="mx-1">|</span>
-                      <span className="font-medium">
-                        {rec.line} {rec.prop?.includes("Points") ? "pts" : rec.prop?.includes("Rebounds") ? "reb" : ""}
-                      </span>
-                      <span className="mx-1">|</span>
-                      <span className={rec.odds?.includes("+") ? "text-[#54c863]" : "text-gray-300"}>{rec.odds}</span>
-                    </div>
-                  </div>
-                  <div className="flex flex-col items-end">
-                    <div className="flex items-center">
-                      <div
-                        className={cn(
-                          "h-1.5 w-16 rounded-full",
-                          rec.confidence >= 80
-                            ? "bg-[#54c863]"
-                            : rec.confidence >= 65
-                              ? "bg-yellow-500"
-                              : "bg-orange-500",
-                        )}
-                      >
-                        <div
-                          className="h-full rounded-full bg-gray-700"
-                          style={{ width: `${100 - rec.confidence}%`, marginLeft: `${rec.confidence}%` }}
-                        ></div>
-                      </div>
-                      <span className="text-xs ml-2">{rec.confidence}%</span>
-                    </div>
-                    <div className="flex mt-2 gap-1">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          addToPropsList(rec)
-                        }}
-                        className="text-xs px-3 py-1 bg-[#b8562f] rounded-full hover:bg-[#c96a43] transition-colors"
-                      >
-                        Add to Props
-                      </button>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          addToFavorites(rec)
-                        }}
-                        className="text-xs px-3 py-1 bg-gray-700 rounded-full hover:bg-gray-600 transition-colors"
-                      >
-                        <Bookmark className="w-3 h-3" />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-                <div className="mt-2 text-xs text-gray-400 flex items-center">
-                  {rec.trend === "up" ? (
-                    <ArrowUp className="w-3 h-3 text-[#54c863] mr-1" />
-                  ) : rec.trend === "down" ? (
-                    <ArrowUp className="w-3 h-3 text-red-500 mr-1 transform rotate-180" />
-                  ) : null}
-                  {rec.trend === "up"
-                    ? "Trending up in last 5 games"
-                    : rec.trend === "down"
-                      ? "Trending down in last 5 games"
-                      : "Consistent in last 5 games"}
-                </div>
-                {rec.analysis && (
-                  <div className="mt-2 pt-2 border-t border-gray-700 text-sm">
-                    <div className="text-xs text-gray-400 mb-1">Analysis:</div>
-                    <p className="text-sm">{rec.analysis}</p>
-                  </div>
-                )}
-              </motion.div>
-            ))}
-          </div>
-
-          <div className="flex gap-2 mt-1 flex-wrap">
-            <button
-              onClick={() => shareAnalysis()}
-              className="text-xs px-3 py-1 bg-gray-800 rounded-full hover:bg-gray-700 transition-colors"
-            >
-              <Share2 className="w-3 h-3 mr-1 inline" />
-              Share
-            </button>
-            <button
-              onClick={() => buildParlay()}
-              className="text-xs px-3 py-1 bg-gray-800 rounded-full hover:bg-gray-700 transition-colors"
-            >
-              <Layers className="w-3 h-3 mr-1 inline" />
-              Build Parlay
-            </button>
-            <button
-              onClick={() => setShowFilterDialog(true)}
-              className="text-xs px-3 py-1 bg-gray-800 rounded-full hover:bg-gray-700 transition-colors"
-            >
-              <Filter className="w-3 h-3 mr-1 inline" />
-              Filter
-            </button>
-            <button
-              onClick={() => exportToPrizePicks()}
-              className="text-xs px-3 py-1 bg-[#b8562f] rounded-full hover:bg-[#c96a43] transition-colors"
-            >
-              <Download className="w-3 h-3 mr-1 inline" />
-              Export
-            </button>
-          </div>
+        <div>
+          <p className="mb-3">{message.content}</p>
+          <InjuryCard
+            injuries={message.data.injuries}
+            title=""
+            onPlayerClick={(injury) => console.log("Player clicked:", injury)}
+          />
         </div>
       )
     }
 
-    if (message.type === "live-game") {
+    // Render news cards
+    if (message.type === "news-update" && message.data?.news) {
       return (
-        <div className="flex flex-col space-y-2">
-          <p>{message.content}</p>
-          <div className="space-y-3 mt-2">
-            {(message.data?.games || []).map((game: Game) => (
-              <LiveGameCard key={game.id} game={game} onClick={() => handleGameClick(game.id)} />
-            ))}
-          </div>
-          <div className="flex gap-2 mt-1">
-            <button
-              onClick={() => setShowFilterDialog(true)}
-              className="text-xs px-3 py-1 bg-gray-800 rounded-full hover:bg-gray-700 transition-colors"
-            >
-              <Filter className="w-3 h-3 mr-1 inline" />
-              Filter Games
-            </button>
-            <button
-              onClick={() => viewTrendingProps()}
-              className="text-xs px-3 py-1 bg-gray-800 rounded-full hover:bg-gray-700 transition-colors"
-            >
-              <TrendingUp className="w-3 h-3 mr-1 inline" />
-              View Props
-            </button>
-          </div>
-        </div>
-      )
-    }
-
-    if (message.type === "injury-report") {
-      return (
-        <div className="flex flex-col space-y-2">
-          <p>{message.content}</p>
-          <div className="space-y-3 mt-2">
-            {(message.data?.injuries || []).map((injury: Injury) => (
-              <div key={injury.id} className="bg-gray-800 rounded-lg p-3 border border-gray-700">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <div className="flex items-center">
-                      <span className="font-bold">{injury.playerName}</span>
-                      <span className="text-gray-400 text-sm ml-2">{injury.team}</span>
-                    </div>
-                    <div className="text-sm mt-1">
-                      <span className="text-gray-300">{injury.injury}</span>
-                      <span className="mx-1">|</span>
-                      <Badge
-                        className={
-                          injury.status === "Out"
-                            ? "bg-red-500"
-                            : injury.status === "Questionable"
-                              ? "bg-yellow-500"
-                              : injury.status === "Doubtful"
-                                ? "bg-orange-500"
-                                : "bg-green-500"
-                        }
-                      >
-                        {injury.status}
-                      </Badge>
-                    </div>
-                  </div>
-                  <div className="text-xs text-gray-400">{injury.updated}</div>
-                </div>
-                <div className="mt-2 text-sm text-gray-300">{injury.notes}</div>
-              </div>
-            ))}
-          </div>
-          <div className="flex gap-2 mt-1">
-            <button
-              onClick={() => setShowInjuryDialog(true)}
-              className="text-xs px-3 py-1 bg-gray-800 rounded-full hover:bg-gray-700 transition-colors"
-            >
-              <Filter className="w-3 h-3 mr-1 inline" />
-              Filter by Team
-            </button>
-            <button
-              onClick={() => viewTrendingProps()}
-              className="text-xs px-3 py-1 bg-gray-800 rounded-full hover:bg-gray-700 transition-colors"
-            >
-              <TrendingUp className="w-3 h-3 mr-1 inline" />
-              Impact on Props
-            </button>
-          </div>
-        </div>
-      )
-    }
-
-    if (message.type === "news-update") {
-      return (
-        <div className="flex flex-col space-y-2">
-          <p>{message.content}</p>
-          <div className="space-y-3 mt-2">
-            {(message.data?.news || []).map((item: News) => (
-              <div
-                key={item.id}
-                className="bg-gray-800 rounded-lg p-3 border border-gray-700 hover:border-gray-600 transition-colors"
-              >
-                <div className="flex justify-between items-start">
-                  <div
-                    className="font-bold cursor-pointer hover:text-[#b8562f] transition-colors"
-                    onClick={() => item.url && window.open(item.url, "_blank", "noopener,noreferrer")}
-                  >
-                    {item.title}
-                    {item.url && <span className="ml-1 text-xs">🔗</span>}
-                  </div>
-                  <Badge
-                    className={
-                      item.impact === "positive"
-                        ? "bg-green-500"
-                        : item.impact === "negative"
-                          ? "bg-red-500"
-                          : "bg-gray-500"
-                    }
-                  >
-                    {item.impact}
-                  </Badge>
-                </div>
-                <div className="mt-2 text-sm text-gray-300">{item.content}</div>
-                <div className="mt-2 flex justify-between items-center text-xs text-gray-400">
-                  <span>{item.source}</span>
-                  <div className="flex items-center gap-2">
-                    <span>{new Date(item.date).toLocaleDateString()}</span>
-                    {item.url && (
-                      <button
-                        onClick={() => window.open(item.url, "_blank", "noopener,noreferrer")}
-                        className="text-[#b8562f] hover:text-[#c96a43] transition-colors"
-                      >
-                        Read More →
-                      </button>
-                    )}
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-          <div className="flex gap-2 mt-1">
-            <button
-              onClick={() => setShowNewsDialog(true)}
-              className="text-xs px-3 py-1 bg-gray-800 rounded-full hover:bg-gray-700 transition-colors"
-            >
-              <Filter className="w-3 h-3 mr-1 inline" />
-              Filter News
-            </button>
-            <button
-              onClick={() => viewTrendingProps()}
-              className="text-xs px-3 py-1 bg-gray-800 rounded-full hover:bg-gray-700 transition-colors"
-            >
-              <TrendingUp className="w-3 h-3 mr-1 inline" />
-              Impact on Props
-            </button>
-          </div>
-        </div>
-      )
-    }
-
-    if (message.type === "trending-props") {
-      return (
-        <div className="flex flex-col space-y-2">
-          <p>{message.content}</p>
-          <div className="space-y-3 mt-2">
-            {(message.data?.props || []).slice(0, 4).map((prop: BetRecommendation) => (
-              <motion.div
-                key={prop.id}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3 }}
-                className="bg-gray-800 rounded-lg p-3 border border-gray-700 transition-all hover:border-gray-600 cursor-pointer"
-                onClick={() => handlePlayerCardClick(prop.player)}
-              >
-                <div className="flex justify-between items-start">
-                  <div>
-                    <div className="flex items-center">
-                      <span className="font-bold">{prop.player}</span>
-                      <span className="text-gray-400 text-sm ml-2">{prop.team}</span>
-                    </div>
-                    <div className="text-sm mt-1">
-                      <span className="text-gray-300">{prop.prop}</span>
-                      <span className="mx-1">|</span>
-                      <span className="font-medium">
-                        {prop.line}{" "}
-                        {prop.prop?.includes("Points") ? "pts" : prop.prop?.includes("Rebounds") ? "reb" : ""}
-                      </span>
-                      <span className="mx-1">|</span>
-                      <span className={prop.odds?.includes("+") ? "text-[#54c863]" : "text-gray-300"}>{prop.odds}</span>
-                    </div>
-                  </div>
-                  <div className="flex flex-col items-end">
-                    <div className="flex items-center">
-                      <div
-                        className={cn(
-                          "h-1.5 w-16 rounded-full",
-                          prop.confidence >= 80
-                            ? "bg-[#54c863]"
-                            : prop.confidence >= 65
-                              ? "bg-yellow-500"
-                              : "bg-orange-500",
-                        )}
-                      >
-                        <div
-                          className="h-full rounded-full bg-gray-700"
-                          style={{ width: `${100 - prop.confidence}%`, marginLeft: `${prop.confidence}%` }}
-                        ></div>
-                      </div>
-                      <span className="text-xs ml-2">{prop.confidence}%</span>
-                    </div>
-                    <div className="flex mt-2 gap-1">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          addToPropsList(prop)
-                        }}
-                        className="text-xs px-3 py-1 bg-[#b8562f] rounded-full hover:bg-[#c96a43] transition-colors"
-                      >
-                        Add to Props
-                      </button>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          addToFavorites(prop)
-                        }}
-                        className="text-xs px-3 py-1 bg-gray-700 rounded-full hover:bg-gray-600 transition-colors"
-                      >
-                        <Bookmark className="w-3 h-3" />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-                <div className="mt-2 text-xs text-gray-400 flex items-center">
-                  {prop.trend === "up" ? (
-                    <ArrowUp className="w-3 h-3 text-[#54c863] mr-1" />
-                  ) : prop.trend === "down" ? (
-                    <ArrowUp className="w-3 h-3 text-red-500 mr-1 transform rotate-180" />
-                  ) : null}
-                  {prop.trend === "up"
-                    ? "Trending up in last 5 games"
-                    : prop.trend === "down"
-                      ? "Trending down in last 5 games"
-                      : "Consistent in last 5 games"}
-                </div>
-              </motion.div>
-            ))}
-          </div>
-          <div className="flex justify-center mt-2">
-            <button
-              onClick={() => setShowTrendingProps(true)}
-              className="text-xs px-4 py-2 bg-gray-800 rounded-lg hover:bg-gray-700 transition-colors"
-            >
-              View All Trending Props
-            </button>
-          </div>
-        </div>
-      )
-    }
-
-    if (message.type === "parlay-builder") {
-      return (
-        <div className="flex flex-col space-y-2">
-          <p>{message.content}</p>
-          <div className="bg-gray-800 rounded-lg p-4 border border-gray-700 mt-2">
-            <div className="flex justify-between items-center mb-3">
-              <h3 className="font-bold text-lg">3-Leg Parlay</h3>
-              <Badge className="bg-[#b8562f]">+{message.data?.odds || "650"}</Badge>
-            </div>
-
-            <div className="space-y-3">
-              {(message.data?.legs || []).map((leg: BetRecommendation, index: number) => (
-                <div key={leg.id} className="flex justify-between items-center p-2 bg-gray-700 rounded">
-                  <div>
-                    <div className="font-medium">{leg.player}</div>
-                    <div className="text-sm text-gray-300">
-                      {leg.prop} {leg.line} {leg.odds}
-                    </div>
-                  </div>
-                  <Badge
-                    className={
-                      leg.confidence >= 80 ? "bg-green-500" : leg.confidence >= 65 ? "bg-yellow-500" : "bg-orange-500"
-                    }
-                  >
-                    {leg.confidence}%
-                  </Badge>
-                </div>
-              ))}
-            </div>
-
-            <div className="mt-4 grid grid-cols-2 gap-3 text-center text-sm">
-              <div className="bg-gray-700 p-2 rounded">
-                <div className="text-gray-400">Win Probability</div>
-                <div className="font-bold">{message.data?.winProbability || "18%"}</div>
-              </div>
-              <div className="bg-gray-700 p-2 rounded">
-                <div className="text-gray-400">Expected Value</div>
-                <div className="font-bold text-green-500">{message.data?.expectedValue || "Positive"}</div>
-              </div>
-            </div>
-
-            <div className="mt-4 flex gap-2">
-              <Button
-                className="flex-1 bg-[#b8562f] hover:bg-[#c96a43]"
-                onClick={() => {
-                  ;(message.data?.legs || []).forEach((leg: BetRecommendation) => {
-                    addToPropsList(leg)
-                  })
-                }}
-              >
-                Add All to Props
-              </Button>
-              <Button variant="outline" className="flex-1" onClick={() => setShowParlayBuilder(true)}>
-                Customize
-              </Button>
-            </div>
-          </div>
+        <div>
+          <p className="mb-3">{message.content}</p>
+          <NewsCard news={message.data.news} title="" onNewsClick={(news) => console.log("News clicked:", news)} />
         </div>
       )
     }
@@ -1381,7 +950,7 @@ export default function ChatInterface() {
   }
 
   return (
-    <div className="flex flex-col h-screen bg-black text-white safe-area-inset">
+    <div className="flex flex-col h-screen bg-[#1F1F1F] text-white safe-area-inset">
       {/* Header */}
       <header className="flex justify-between items-center p-4 border-b border-gray-800 pt-safe">
         <div className="flex items-center gap-3">
@@ -1392,7 +961,7 @@ export default function ChatInterface() {
               width={82}
               height={32}
               className="h-full w-auto"
-              priority
+              priority={true}
             />
           </div>
         </div>
@@ -1401,18 +970,15 @@ export default function ChatInterface() {
             <Tooltip>
               <TooltipTrigger asChild>
                 <button
-                  onClick={() => setShowNewsDialog(true)}
+                  onClick={() => setShowApiStatus(!showApiStatus)}
                   className="p-2 text-gray-400 hover:text-white hover:bg-gray-800 rounded-full transition-colors relative"
-                  aria-label="News"
+                  aria-label="API Status"
                 >
                   <AlertCircle className="w-5 h-5" />
-                  {newsItems.length > 0 && (
-                    <span className="absolute top-0 right-0 w-2 h-2 bg-[#b8562f] rounded-full"></span>
-                  )}
                 </button>
               </TooltipTrigger>
               <TooltipContent>
-                <p>Latest News ({newsItems.length} articles)</p>
+                <p>API Status</p>
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
@@ -1436,6 +1002,18 @@ export default function ChatInterface() {
         </div>
       </header>
 
+      {/* API Status Modal */}
+      <Dialog open={showApiStatus} onOpenChange={setShowApiStatus}>
+        <DialogContent className="bg-gray-900 text-white border border-gray-700 rounded-lg w-[95vw] max-w-2xl mx-auto z-50 p-0 overflow-hidden">
+          <DialogHeader className="p-4 border-b border-gray-700">
+            <DialogTitle>API Status & Configuration</DialogTitle>
+          </DialogHeader>
+          <div className="p-4">
+            <SportsApiStatus />
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Side Menu */}
       <SideMenu
         isOpen={showSideMenu}
@@ -1446,58 +1024,6 @@ export default function ChatInterface() {
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Sport Tabs */}
-        <div className="flex overflow-x-auto py-3 px-4 space-x-2 border-b border-gray-800 hide-scrollbar">
-          <SportTab
-            name="NBA"
-            logo="/nba-logo.png"
-            active={activeSport === "NBA"}
-            onClick={() => setActiveSport("NBA")}
-          />
-          <SportTab
-            name="NFL"
-            logo="/nfl-logo.png"
-            active={activeSport === "NFL"}
-            onClick={() => setActiveSport("NFL")}
-          />
-          <SportTab
-            name="MLB"
-            logo="/mlb-logo.png"
-            active={activeSport === "MLB"}
-            onClick={() => setActiveSport("MLB")}
-          />
-          <SportTab
-            name="NHL"
-            logo="/nhl-logo.png"
-            active={activeSport === "NHL"}
-            onClick={() => setActiveSport("NHL")}
-          />
-          <SportTab
-            name="UFC"
-            logo="/placeholder.svg?height=16&width=16"
-            active={activeSport === "UFC"}
-            onClick={() => setActiveSport("UFC")}
-          />
-          <SportTab
-            name="PGA"
-            logo="/placeholder.svg?height=16&width=16"
-            active={activeSport === "PGA"}
-            onClick={() => setActiveSport("PGA")}
-          />
-          <SportTab
-            name="SOCCER"
-            logo="/placeholder.svg?height=16&width=16"
-            active={activeSport === "SOCCER"}
-            onClick={() => setActiveSport("SOCCER")}
-          />
-          <SportTab
-            name="TENNIS"
-            logo="/placeholder.svg?height=16&width=16"
-            active={activeSport === "TENNIS"}
-            onClick={() => setActiveSport("TENNIS")}
-          />
-        </div>
-
         {/* Chat Container */}
         <div className="flex-1 flex flex-col overflow-y-auto p-4 space-y-4">
           {messages.map((message) => (
@@ -1506,8 +1032,8 @@ export default function ChatInterface() {
               className={cn(
                 "max-w-[85%] rounded-2xl p-3",
                 message.sender === "user"
-                  ? "bg-gray-800 ml-auto rounded-br-none"
-                  : "bg-gray-900 mr-auto rounded-bl-none",
+                  ? "bg-white/15 ml-auto rounded-br-none" // User: white with 15% opacity
+                  : "bg-transparent mr-auto rounded-bl-none border border-gray-700/30", // SLIPTACTIX: transparent with subtle border
               )}
             >
               {renderMessage(message)}
@@ -1516,84 +1042,77 @@ export default function ChatInterface() {
           <div ref={messagesEndRef} />
         </div>
 
-        {/* Smart Replies with Category Dropdown */}
-        <div className="flex overflow-x-auto py-3 px-4 space-x-2 border-t border-gray-800 hide-scrollbar">
+        {/* Sports Selection and Quick Chat */}
+        <div className="flex items-center gap-2 py-3 px-4 border-t border-gray-800">
+          {/* Sports Dropdown */}
           <div className="relative">
             <button
               onClick={() => setShowCategoryDropdown(!showCategoryDropdown)}
-              className="flex items-center gap-1 px-3 py-1 rounded-full text-sm bg-[#b8562f] text-white"
+              className="flex items-center gap-2 px-4 py-2 rounded-full text-sm bg-[#b8562f] text-white border border-[#b8562f]"
             >
-              {quickChatCategory} <ChevronDown className="w-4 h-4 ml-1" />
+              <div className="w-4 h-4 relative">
+                <Image
+                  src={`/${activeSport.toLowerCase()}-logo.png`}
+                  alt={activeSport}
+                  width={16}
+                  height={16}
+                  className="object-contain"
+                  onError={(e) => {
+                    e.currentTarget.src = "/placeholder.svg?height=16&width=16"
+                  }}
+                />
+              </div>
+              {activeSport}
+              <ChevronUp className="w-4 h-4 ml-1" />
             </button>
+
             {showCategoryDropdown && (
               <motion.div
-                initial={{ opacity: 0, y: -10 }}
+                initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                className="fixed inset-0 z-50 flex items-end justify-center pb-20 sm:pb-16"
-                onClick={() => setShowCategoryDropdown(false)}
+                exit={{ opacity: 0, y: 10 }}
+                className="absolute bottom-full left-0 mb-2 bg-gray-800 rounded-lg shadow-lg z-50 min-w-[120px] overflow-hidden border border-gray-700"
+                onClick={(e) => e.stopPropagation()}
               >
-                <div className="absolute inset-0 bg-black bg-opacity-50" />
-                <motion.div
-                  initial={{ scale: 0.95 }}
-                  animate={{ scale: 1 }}
-                  className="bg-gray-800 rounded-lg shadow-lg z-50 w-[90%] max-w-xs overflow-hidden"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  {Object.keys(quickChatOptions).map((category) => (
-                    <button
-                      key={category}
-                      onClick={() => {
-                        setQuickChatCategory(category as QuickChatCategory)
-                        setShowCategoryDropdown(false)
-                      }}
-                      className={`block w-full text-left px-4 py-3 hover:bg-gray-700 text-sm ${
-                        category === quickChatCategory ? "bg-gray-700 text-[#b8562f]" : "text-white"
-                      }`}
-                    >
-                      {category}
-                    </button>
-                  ))}
-                </motion.div>
+                {(["NBA", "NFL", "MLB", "NHL", "UFC", "PGA", "SOCCER", "TENNIS"] as Sport[]).map((sport) => (
+                  <button
+                    key={sport}
+                    onClick={() => {
+                      setActiveSport(sport)
+                      setShowCategoryDropdown(false)
+                    }}
+                    className={`flex items-center gap-2 w-full text-left px-4 py-3 hover:bg-gray-700 text-sm ${
+                      sport === activeSport ? "bg-gray-700 text-[#b8562f]" : "text-white"
+                    }`}
+                  >
+                    <div className="w-4 h-4 relative">
+                      <Image
+                        src={`/${sport.toLowerCase()}-logo.png`}
+                        alt={sport}
+                        width={16}
+                        height={16}
+                        className="object-contain"
+                        onError={(e) => {
+                          e.currentTarget.src = "/placeholder.svg?height=16&width=16"
+                        }}
+                      />
+                    </div>
+                    {sport}
+                  </button>
+                ))}
               </motion.div>
             )}
           </div>
-          {quickChatOptions[quickChatCategory].slice(0, expandedQuickChat ? 8 : 4).map((reply, index) => (
-            <QuickActionButton
-              key={index}
-              label={reply}
-              onClick={() => {
-                handleSendMessage(reply)
-              }}
-            />
-          ))}
-          <button
-            onClick={() => setExpandedQuickChat(!expandedQuickChat)}
-            className="px-3 py-1 rounded-full text-sm bg-gray-800 text-gray-300 flex-shrink-0"
-          >
-            {expandedQuickChat ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-          </button>
+
+          {/* AI-Generated Quick Chat Options */}
+          <div className="flex overflow-x-auto space-x-2 hide-scrollbar flex-1">
+            {getAIQuickChatOptions()
+              .slice(0, 3)
+              .map((option, index) => (
+                <QuickActionButton key={index} label={option} onClick={() => handleSendMessage(option)} />
+              ))}
+          </div>
         </div>
-
-        {/* Props List */}
-        {showPropsList && selectedProps.length > 0 && (
-          <PropsList
-            props={selectedProps}
-            onClose={() => setShowPropsList(false)}
-            onRemove={removeProp}
-            onExport={exportToPrizePicks}
-          />
-        )}
-
-        {/* Favorites List */}
-        {showFavorites && (
-          <FavoritesList
-            props={favoriteProps.length > 0 ? favoriteProps : trendingProps.slice(0, 2)}
-            onClose={() => setShowFavorites(false)}
-            onRemove={removeFavorite}
-            onAddToPropsList={addToPropsList}
-          />
-        )}
 
         {/* Input Area */}
         <div className="p-4 border-t border-gray-800 pb-safe">
@@ -1611,347 +1130,30 @@ export default function ChatInterface() {
                 }
               }}
               onKeyDown={handleKeyDown}
-              placeholder="ask anything"
-              className="w-full bg-gray-800 rounded-full py-3 px-4 pr-12 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#b8562f] transition-shadow"
+              placeholder="Ask anything"
+              className="w-full bg-gray-800/50 rounded-full py-3 px-4 pr-20 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#b8562f] transition-shadow border border-gray-700/30"
             />
-            <button
-              onClick={() => handleSendMessage()}
-              className="absolute right-3 bg-[#b8562f] hover:bg-[#c96a43] rounded-full p-2 transition-colors"
-              aria-label="Send"
-            >
-              <Send className="w-5 h-5" />
-            </button>
+            <div className="absolute right-3 flex items-center gap-2">
+              <button
+                className="p-2 text-gray-400 hover:text-white rounded-full transition-colors"
+                aria-label="Voice input"
+              >
+                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z" />
+                  <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z" />
+                </svg>
+              </button>
+              <button
+                onClick={() => handleSendMessage()}
+                className="bg-[#b8562f] hover:bg-[#c96a43] rounded-full p-2 transition-colors"
+                aria-label="Send"
+              >
+                <Send className="w-5 h-5" />
+              </button>
+            </div>
           </div>
         </div>
       </div>
-
-      {/* Enhanced Mobile-Optimized Modals */}
-      {/* Player Detail Modal */}
-      <Dialog open={showPlayerModal} onOpenChange={setShowPlayerModal}>
-        <DialogContent className="bg-gray-900 text-white border border-gray-700 rounded-lg w-[95vw] h-[90vh] max-w-none mx-auto z-50 p-0 overflow-hidden">
-          <DialogHeader className="p-4 border-b border-gray-700">
-            <DialogTitle>Player Analysis</DialogTitle>
-          </DialogHeader>
-          <div className="flex-1 overflow-y-auto p-4">
-            {selectedPlayer && (
-              <PlayerDetailCard playerName={selectedPlayer} onClose={() => setShowPlayerModal(false)} />
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* News Dialog - Mobile Optimized */}
-      <Dialog open={showNewsDialog} onOpenChange={setShowNewsDialog}>
-        <DialogContent className="bg-gray-900 text-white border border-gray-700 rounded-lg w-[95vw] h-[80vh] max-w-none mx-auto z-50 p-0 overflow-hidden">
-          <DialogHeader className="p-4 border-b border-gray-700">
-            <DialogTitle>Latest NBA News ({newsItems.length} articles)</DialogTitle>
-          </DialogHeader>
-          <div className="flex-1 overflow-y-auto p-4 space-y-4">
-            {newsItems.length > 0 ? (
-              newsItems.map((item) => (
-                <div
-                  key={item.id}
-                  className="bg-gray-800 rounded-lg p-4 border border-gray-700 hover:border-gray-600 transition-colors"
-                >
-                  <div className="flex justify-between items-start mb-2">
-                    <div
-                      className="font-bold text-sm cursor-pointer hover:text-[#b8562f] transition-colors flex items-center"
-                      onClick={() => item.url && window.open(item.url, "_blank", "noopener,noreferrer")}
-                    >
-                      {item.title}
-                      {item.url && <span className="ml-1 text-xs">🔗</span>}
-                    </div>
-                    <Badge
-                      className={
-                        item.impact === "positive"
-                          ? "bg-green-500"
-                          : item.impact === "negative"
-                            ? "bg-red-500"
-                            : "bg-gray-500"
-                      }
-                    >
-                      {item.impact}
-                    </Badge>
-                  </div>
-                  <div className="text-sm text-gray-300 mb-2">{item.content}</div>
-                  <div className="text-xs text-gray-400 flex justify-between items-center">
-                    <span>{item.source}</span>
-                    <div className="flex items-center gap-2">
-                      <span>{new Date(item.date).toLocaleDateString()}</span>
-                      {item.url && (
-                        <button
-                          onClick={() => window.open(item.url, "_blank", "noopener,noreferrer")}
-                          className="text-[#b8562f] hover:text-[#c96a43] transition-colors font-medium"
-                        >
-                          Read Full Article →
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              ))
-            ) : (
-              <div className="bg-yellow-900/20 border border-yellow-600/30 rounded-lg p-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <AlertCircle className="w-4 h-4 text-yellow-500" />
-                  <span className="text-sm font-medium text-yellow-400">No Real News Data Available</span>
-                </div>
-                <p className="text-sm text-yellow-200">
-                  No real news data is currently available from ESPN or other sources. Check back later for live
-                  updates.
-                </p>
-              </div>
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Injury Dialog - Mobile Optimized */}
-      <Dialog open={showInjuryDialog} onOpenChange={setShowInjuryDialog}>
-        <DialogContent className="bg-gray-900 text-white border border-gray-700 rounded-lg w-[95vw] h-[80vh] max-w-none mx-auto z-50 p-0 overflow-hidden">
-          <DialogHeader className="p-4 border-b border-gray-700">
-            <DialogTitle>NBA Injury Report ({injuries.length} players)</DialogTitle>
-          </DialogHeader>
-          <div className="flex-1 overflow-y-auto p-4 space-y-4">
-            {injuries.length > 0 ? (
-              injuries.map((injury) => (
-                <div key={injury.id} className="bg-gray-800 rounded-lg p-4 border border-gray-700">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center">
-                      <span className="font-bold">{injury.playerName}</span>
-                      <span className="text-gray-400 text-sm ml-2">{injury.team}</span>
-                    </div>
-                    <Badge
-                      className={
-                        injury.status === "Out"
-                          ? "bg-red-500"
-                          : injury.status === "Questionable"
-                            ? "bg-yellow-500"
-                            : injury.status === "Doubtful"
-                              ? "bg-orange-500"
-                              : "bg-green-500"
-                      }
-                    >
-                      {injury.status}
-                    </Badge>
-                  </div>
-                  <div className="text-sm text-gray-300 mb-1">{injury.injury}</div>
-                  <div className="text-sm text-gray-400">{injury.notes}</div>
-                </div>
-              ))
-            ) : (
-              <div className="bg-yellow-900/20 border border-yellow-600/30 rounded-lg p-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <AlertCircle className="w-4 h-4 text-yellow-500" />
-                  <span className="text-sm font-medium text-yellow-400">No Real Injury Data Available</span>
-                </div>
-                <p className="text-sm text-yellow-200">
-                  No real injury data is currently available from official sources. Check back later for live updates.
-                </p>
-              </div>
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Other Mobile-Optimized Modals */}
-      <Dialog open={showShareDialog} onOpenChange={setShowShareDialog}>
-        <DialogContent className="bg-gray-900 text-white border border-gray-700 rounded-lg w-[90vw] max-w-sm mx-auto z-50">
-          <DialogHeader>
-            <DialogTitle>Share Analysis</DialogTitle>
-          </DialogHeader>
-          <p>Sharing analysis...</p>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={showExportDialog} onOpenChange={setShowExportDialog}>
-        <DialogContent className="bg-gray-900 text-white border border-gray-700 rounded-lg w-[90vw] max-w-sm mx-auto z-50">
-          <DialogHeader>
-            <DialogTitle>Export to PrizePicks</DialogTitle>
-          </DialogHeader>
-          <p>Exporting props...</p>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={showFilterDialog} onOpenChange={setShowFilterDialog}>
-        <DialogContent className="bg-gray-900 text-white border border-gray-700 rounded-lg w-[90vw] max-w-sm mx-auto z-50">
-          <DialogHeader>
-            <DialogTitle>Filter Options</DialogTitle>
-          </DialogHeader>
-          <p>Filter options coming soon...</p>
-        </DialogContent>
-      </Dialog>
-
-      {/* Parlay Builder Dialog - Mobile Optimized */}
-      <Dialog open={showParlayBuilder} onOpenChange={setShowParlayBuilder}>
-        <DialogContent className="bg-gray-900 text-white border border-gray-700 rounded-lg w-[95vw] h-[85vh] max-w-none mx-auto z-50 p-0 overflow-hidden">
-          <DialogHeader className="p-4 border-b border-gray-700">
-            <DialogTitle>Parlay Builder</DialogTitle>
-          </DialogHeader>
-          <div className="flex-1 overflow-y-auto p-4 space-y-4">
-            {trendingProps.length > 0 ? (
-              <>
-                <div className="bg-gray-800 p-3 rounded-lg">
-                  <h3 className="font-medium mb-2">Selected Props</h3>
-                  <div className="space-y-2">
-                    {trendingProps.slice(0, 3).map((prop) => (
-                      <div key={prop.id} className="flex justify-between items-center p-2 bg-gray-700 rounded">
-                        <div>
-                          <div className="font-medium">{prop.player}</div>
-                          <div className="text-sm text-gray-300">
-                            {prop.prop} {prop.line} {prop.odds}
-                          </div>
-                        </div>
-                        <button className="text-gray-400 hover:text-white">
-                          <X className="w-4 h-4" />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                  <div className="mt-3 flex justify-between items-center">
-                    <div>
-                      <div className="text-sm text-gray-400">Total Odds</div>
-                      <div className="font-bold">+650</div>
-                    </div>
-                    <Button className="bg-[#b8562f] hover:bg-[#c96a43]">Add More Props</Button>
-                  </div>
-                </div>
-                <div className="bg-gray-800 p-3 rounded-lg">
-                  <h3 className="font-medium mb-2">Recommended Props</h3>
-                  <div className="space-y-2">
-                    {trendingProps.slice(3, 5).map((prop) => (
-                      <div key={prop.id} className="flex justify-between items-center p-2 bg-gray-700 rounded">
-                        <div>
-                          <div className="font-medium">{prop.player}</div>
-                          <div className="text-sm text-gray-300">
-                            {prop.prop} {prop.line} {prop.odds}
-                          </div>
-                        </div>
-                        <button className="text-xs px-2 py-1 bg-[#b8562f] rounded hover:bg-[#c96a43]">Add</button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-                <Button className="w-full bg-[#b8562f] hover:bg-[#c96a43]">Export Parlay</Button>
-              </>
-            ) : (
-              <div className="bg-yellow-900/20 border border-yellow-600/30 rounded-lg p-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <AlertCircle className="w-4 h-4 text-yellow-500" />
-                  <span className="text-sm font-medium text-yellow-400">No Real Props Data Available</span>
-                </div>
-                <p className="text-sm text-yellow-200">
-                  No real props data is available for parlay building. Check back when live PrizePicks data is
-                  available.
-                </p>
-              </div>
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Trending Props Dialog - Mobile Optimized */}
-      <Dialog open={showTrendingProps} onOpenChange={setShowTrendingProps}>
-        <DialogContent className="bg-gray-900 text-white border border-gray-700 rounded-lg w-[95vw] h-[85vh] max-w-none mx-auto z-50 p-0 overflow-hidden">
-          <DialogHeader className="p-4 border-b border-gray-700">
-            <DialogTitle>Trending Props ({trendingProps.length} available)</DialogTitle>
-          </DialogHeader>
-          <div className="flex-1 overflow-y-auto p-4 space-y-3">
-            {trendingProps.length > 0 ? (
-              trendingProps.map((prop) => (
-                <div
-                  key={prop.id}
-                  className="bg-gray-800 rounded-lg p-3 border border-gray-700 transition-all hover:border-gray-600 cursor-pointer"
-                  onClick={() => handlePlayerCardClick(prop.player)}
-                >
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <div className="flex items-center">
-                        <span className="font-bold">{prop.player}</span>
-                        <span className="text-gray-400 text-sm ml-2">{prop.team}</span>
-                      </div>
-                      <div className="text-sm mt-1">
-                        <span className="text-gray-300">{prop.prop}</span>
-                        <span className="mx-1">|</span>
-                        <span className="font-medium">
-                          {prop.line}{" "}
-                          {prop.prop?.includes("Points") ? "pts" : prop.prop?.includes("Rebounds") ? "reb" : ""}
-                        </span>
-                        <span className="mx-1">|</span>
-                        <span className={prop.odds?.includes("+") ? "text-[#54c863]" : "text-gray-300"}>
-                          {prop.odds}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="flex flex-col items-end">
-                      <div className="flex items-center">
-                        <div
-                          className={cn(
-                            "h-1.5 w-16 rounded-full",
-                            prop.confidence >= 80
-                              ? "bg-[#54c863]"
-                              : prop.confidence >= 65
-                                ? "bg-yellow-500"
-                                : "bg-orange-500",
-                          )}
-                        >
-                          <div
-                            className="h-full rounded-full bg-gray-700"
-                            style={{ width: `${100 - prop.confidence}%`, marginLeft: `${prop.confidence}%` }}
-                          ></div>
-                        </div>
-                        <span className="text-xs ml-2">{prop.confidence}%</span>
-                      </div>
-                      <div className="flex mt-2 gap-1">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            addToPropsList(prop)
-                          }}
-                          className="text-xs px-3 py-1 bg-[#b8562f] rounded-full hover:bg-[#c96a43] transition-colors"
-                        >
-                          Add to Props
-                        </button>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            addToFavorites(prop)
-                          }}
-                          className="text-xs px-3 py-1 bg-gray-700 rounded-full hover:bg-gray-600 transition-colors"
-                        >
-                          <Bookmark className="w-3 h-3" />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="mt-2 text-xs text-gray-400 flex items-center">
-                    {prop.trend === "up" ? (
-                      <ArrowUp className="w-3 h-3 text-[#54c863] mr-1" />
-                    ) : prop.trend === "down" ? (
-                      <ArrowUp className="w-3 h-3 text-red-500 mr-1 transform rotate-180" />
-                    ) : null}
-                    {prop.trend === "up"
-                      ? "Trending up in last 5 games"
-                      : prop.trend === "down"
-                        ? "Trending down in last 5 games"
-                        : "Consistent in last 5 games"}
-                  </div>
-                </div>
-              ))
-            ) : (
-              <div className="bg-yellow-900/20 border border-yellow-600/30 rounded-lg p-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <AlertCircle className="w-4 h-4 text-yellow-500" />
-                  <span className="text-sm font-medium text-yellow-400">No Real Props Data Available</span>
-                </div>
-                <p className="text-sm text-yellow-200">
-                  No real props data is currently available from PrizePicks. Check back later for live updates.
-                </p>
-              </div>
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   )
 }
