@@ -9,7 +9,7 @@ export function QuickActionButton({ label, onClick }: QuickActionButtonProps) {
   return (
     <button
       onClick={onClick}
-      className="px-3 py-1 rounded-full text-sm bg-gray-800 text-gray-300 hover:bg-gray-700 hover:text-white transition-colors whitespace-nowrap flex-shrink-0"
+      className="flex items-center gap-1.5 px-3 py-1.5 rounded-full transition-colors whitespace-nowrap text-sm bg-white/15 text-white hover:bg-white/25"
     >
       {label}
     </button>

@@ -36,7 +36,7 @@ export function PropsCard({
       transition={{ duration: 0.3 }}
       className="bg-[rgba(184,86,47,0.15)] rounded-[20px] p-5 w-full max-w-[400px]"
     >
-      <h3 className="text-white text-xl font-normal leading-[130.94%] mb-5 font-['Inter']">{title}</h3>
+      <h3 className="text-white text-xl font-normal leading-[130.94%] mb-5">{title}</h3>
 
       <div className="space-y-4">
         {props.map((prop, index) => (
@@ -81,40 +81,38 @@ function PropCardContent({
       {/* Player and Team */}
       <div className="flex items-center justify-between">
         <div>
-          <div className="text-white text-base font-semibold font-['Inter']">{prop.player}</div>
-          <div className="text-[#AFAFAF] text-sm font-normal font-['Inter']">{prop.team}</div>
+          <div className="text-white text-base font-semibold">{prop.player}</div>
+          <div className="text-[#AFAFAF] text-sm font-normal">{prop.team}</div>
         </div>
         <div className="flex items-center gap-2">
           {getTrendIcon()}
-          <span className={`text-sm font-bold font-['Inter'] ${getConfidenceColor()}`}>{prop.confidence}%</span>
+          <span className={`text-sm font-bold ${getConfidenceColor()}`}>{prop.confidence}%</span>
         </div>
       </div>
 
       {/* Prop Details */}
       <div className="flex items-center justify-between">
         <div>
-          <div className="text-white text-lg font-bold font-['Inter']">{prop.prop}</div>
-          <div className="text-[#AFAFAF] text-sm font-normal font-['Inter']">Line: {prop.line}</div>
+          <div className="text-white text-lg font-bold">{prop.prop}</div>
+          <div className="text-[#AFAFAF] text-sm font-normal">Line: {prop.line}</div>
         </div>
-        <div className="text-white text-lg font-bold font-['Inter']">{prop.odds}</div>
+        <div className="text-white text-lg font-bold">{prop.odds}</div>
       </div>
 
       {/* Analysis */}
-      {prop.analysis && (
-        <div className="text-[#AFAFAF] text-sm font-normal font-['Inter'] leading-relaxed">{prop.analysis}</div>
-      )}
+      {prop.analysis && <div className="text-[#AFAFAF] text-sm font-normal leading-relaxed">{prop.analysis}</div>}
 
       {/* Action Buttons */}
       <div className="flex items-center gap-2.5">
         <button
           onClick={() => onPropClick?.(prop)}
-          className="flex items-center justify-center gap-1.5 px-3 py-2 bg-[rgba(255,255,255,0.15)] rounded-[5px] text-white text-xs font-normal font-['Inter'] hover:bg-[rgba(255,255,255,0.25)] transition-colors"
+          className="flex items-center justify-center gap-1.5 px-3 py-2 bg-[rgba(255,255,255,0.15)] rounded-[5px] text-white text-xs font-normal hover:bg-[rgba(255,255,255,0.25)] transition-colors"
         >
           View Details
         </button>
         <button
           onClick={() => onAddToFavorites?.(prop)}
-          className="flex items-center justify-center gap-1.5 px-3 py-2 bg-[rgba(255,255,255,0.15)] rounded-[5px] text-white text-xs font-normal font-['Inter'] hover:bg-[rgba(255,255,255,0.25)] transition-colors"
+          className="flex items-center justify-center gap-1.5 px-3 py-2 bg-[rgba(255,255,255,0.15)] rounded-[5px] text-white text-xs font-normal hover:bg-[rgba(255,255,255,0.25)] transition-colors"
         >
           <Star className="w-4 h-4" />
           Add to Favorites

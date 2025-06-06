@@ -30,7 +30,7 @@ export function NewsCard({ news, title = "Latest NBA news:", onNewsClick }: News
       transition={{ duration: 0.3 }}
       className="bg-[rgba(184,86,47,0.15)] rounded-[20px] p-5 w-full max-w-[400px]"
     >
-      <h3 className="text-white text-xl font-normal leading-[130.94%] mb-5 font-['Inter']">{title}</h3>
+      <h3 className="text-white text-xl font-normal leading-[130.94%] mb-5">{title}</h3>
 
       <div className="space-y-4">
         {news.map((item, index) => (
@@ -81,8 +81,8 @@ function NewsCardContent({
       {/* Header */}
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1">
-          <div className="text-white text-base font-semibold font-['Inter'] leading-tight mb-1">{newsItem.title}</div>
-          <div className="flex items-center gap-2 text-[#AFAFAF] text-xs font-normal font-['Inter']">
+          <div className="text-white text-base font-semibold leading-tight mb-1">{newsItem.title}</div>
+          <div className="flex items-center gap-2 text-[#AFAFAF] text-xs font-normal">
             <span>{newsItem.source}</span>
             <span>•</span>
             <span>{formatDate(newsItem.date)}</span>
@@ -92,7 +92,7 @@ function NewsCardContent({
       </div>
 
       {/* Content */}
-      <div className="text-[#AFAFAF] text-sm font-normal font-['Inter'] leading-relaxed">
+      <div className="text-[#AFAFAF] text-sm font-normal leading-relaxed">
         {newsItem.content.length > 150 ? `${newsItem.content.substring(0, 150)}...` : newsItem.content}
       </div>
 
@@ -100,12 +100,12 @@ function NewsCardContent({
       {(newsItem.playerName || newsItem.teamName) && (
         <div className="flex items-center gap-2">
           {newsItem.playerName && (
-            <span className="px-2 py-1 bg-[rgba(255,255,255,0.1)] rounded text-white text-xs font-normal font-['Inter']">
+            <span className="px-2 py-1 bg-[rgba(255,255,255,0.1)] rounded text-white text-xs font-normal">
               {newsItem.playerName}
             </span>
           )}
           {newsItem.teamName && (
-            <span className="px-2 py-1 bg-[rgba(255,255,255,0.1)] rounded text-white text-xs font-normal font-['Inter']">
+            <span className="px-2 py-1 bg-[rgba(255,255,255,0.1)] rounded text-white text-xs font-normal">
               {newsItem.teamName}
             </span>
           )}
@@ -116,7 +116,7 @@ function NewsCardContent({
       <div className="flex items-center justify-between">
         <button
           onClick={() => onNewsClick?.(newsItem)}
-          className="flex items-center justify-center gap-1.5 px-3 py-1.5 bg-[rgba(255,255,255,0.15)] rounded-[5px] text-white text-xs font-normal font-['Inter'] hover:bg-[rgba(255,255,255,0.25)] transition-colors"
+          className="flex items-center justify-center gap-1.5 px-3 py-1.5 bg-[rgba(255,255,255,0.15)] rounded-[5px] text-white text-xs font-normal hover:bg-[rgba(255,255,255,0.25)] transition-colors"
         >
           Read More
         </button>

@@ -3,7 +3,7 @@
 import type React from "react"
 
 import { useState, useRef, useEffect } from "react"
-import { Menu, Send, ChevronUp, AlertCircle } from "lucide-react"
+import { Menu, ChevronUp, AlertCircle } from "lucide-react"
 import Image from "next/image"
 import { cn } from "@/lib/utils"
 import SideMenu from "@/components/side-menu"
@@ -952,7 +952,7 @@ export default function ChatInterface() {
   return (
     <div className="flex flex-col h-screen bg-[#1F1F1F] text-white safe-area-inset">
       {/* Header */}
-      <header className="flex justify-between items-center p-4 border-b border-gray-800 pt-safe">
+      <header className="flex justify-between items-center p-4 ios-header clean-interface">
         <div className="flex items-center gap-3">
           <div className="h-8">
             <Image
@@ -1030,10 +1030,10 @@ export default function ChatInterface() {
             <div
               key={message.id}
               className={cn(
-                "max-w-[85%] rounded-2xl p-3",
+                "max-w-[85%] rounded-2xl p-3 clean-interface",
                 message.sender === "user"
                   ? "bg-white/15 ml-auto rounded-br-none" // User: white with 15% opacity
-                  : "bg-transparent mr-auto rounded-bl-none border border-gray-700/30", // SLIPTACTIX: transparent with subtle border
+                  : "bg-transparent mr-auto rounded-bl-none", // SLIPTACTIX: transparent, no border
               )}
             >
               {renderMessage(message)}
@@ -1043,12 +1043,12 @@ export default function ChatInterface() {
         </div>
 
         {/* Sports Selection and Quick Chat */}
-        <div className="flex items-center gap-2 py-3 px-4 border-t border-gray-800">
+        <div className="flex items-center gap-2 py-3 px-4 clean-interface">
           {/* Sports Dropdown */}
           <div className="relative">
             <button
               onClick={() => setShowCategoryDropdown(!showCategoryDropdown)}
-              className="flex items-center gap-2 px-4 py-2 rounded-full text-sm bg-[#b8562f] text-white border border-[#b8562f]"
+              className="flex items-center gap-2 px-3 py-1.5 rounded-full text-sm bg-[#B8562F]/15 border border-[#B8562F] text-white"
             >
               <div className="w-4 h-4 relative">
                 <Image
@@ -1071,7 +1071,7 @@ export default function ChatInterface() {
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: 10 }}
-                className="absolute bottom-full left-0 mb-2 bg-gray-800 rounded-lg shadow-lg z-50 min-w-[120px] overflow-hidden border border-gray-700"
+                className="absolute bottom-full left-0 mb-2 bg-gray-800 rounded-lg shadow-lg z-50 min-w-[120px] overflow-hidden"
                 onClick={(e) => e.stopPropagation()}
               >
                 {(["NBA", "NFL", "MLB", "NHL", "UFC", "PGA", "SOCCER", "TENNIS"] as Sport[]).map((sport) => (
@@ -1114,9 +1114,30 @@ export default function ChatInterface() {
           </div>
         </div>
 
-        {/* Input Area */}
-        <div className="p-4 border-t border-gray-800 pb-safe">
-          <div className="relative flex items-center">
+        {/* Input Area with Gradient Background */}
+        <div
+          className="p-4 pb-safe clean-interface relative"
+          style={{
+            background: "linear-gradient(180deg, rgba(0, 0, 0, 0) 0%, rgba(184, 86, 47, 0.15) 100%)",
+          }}
+        >
+          <div className="relative flex items-center gap-4">
+            {/* Attachment Button */}
+            <button
+              className="p-2 text-gray-400 hover:text-white bg-white/15 rounded-full transition-colors flex-shrink-0"
+              aria-label="Attach file"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"
+                />
+              </svg>
+            </button>
+
+            {/* Input Field */}
             <input
               type="text"
               value={inputValue}
@@ -1131,26 +1152,28 @@ export default function ChatInterface() {
               }}
               onKeyDown={handleKeyDown}
               placeholder="Ask anything"
-              className="w-full bg-gray-800/50 rounded-full py-3 px-4 pr-20 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#b8562f] transition-shadow border border-gray-700/30"
+              className="flex-1 bg-transparent text-white placeholder-gray-400 text-left focus:outline-none text-lg"
             />
-            <div className="absolute right-3 flex items-center gap-2">
-              <button
-                className="p-2 text-gray-400 hover:text-white rounded-full transition-colors"
-                aria-label="Voice input"
-              >
+
+            {/* Voice/Send Button */}
+            <button
+              onClick={() => handleSendMessage()}
+              className="p-2 bg-[#B8562F] text-white rounded-full transition-colors hover:bg-[#c96a43] flex-shrink-0"
+              aria-label={inputValue ? "Send" : "Voice input"}
+            >
+              {inputValue ? (
+                // Up arrow (send) icon
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
+                </svg>
+              ) : (
+                // Microphone icon
                 <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
                   <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z" />
                   <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z" />
                 </svg>
-              </button>
-              <button
-                onClick={() => handleSendMessage()}
-                className="bg-[#b8562f] hover:bg-[#c96a43] rounded-full p-2 transition-colors"
-                aria-label="Send"
-              >
-                <Send className="w-5 h-5" />
-              </button>
-            </div>
+              )}
+            </button>
           </div>
         </div>
       </div>
