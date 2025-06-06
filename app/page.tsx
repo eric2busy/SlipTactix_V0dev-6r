@@ -72,6 +72,7 @@ type Game = {
   broadcast?: string
   homeRecord?: string
   awayRecord?: string
+  awayRecord?: string
 }
 
 type News = {
@@ -954,7 +955,7 @@ export default function ChatInterface() {
   return (
     <div className="flex flex-col h-screen bg-[#1F1F1F] text-white">
       {/* Header */}
-      <header className="ios-header flex justify-between items-center px-4 clean-interface">
+      <header className="ios-header flex justify-between items-center px-4 pb-3 clean-interface">
         <div className="flex items-center gap-3">
           <div className="h-8">
             <Image

@@ -141,9 +141,11 @@ export default function SportsChat() {
         {messages.map((message) => (
           <div key={message.id} className={`flex ${message.sender === "user" ? "justify-end" : "justify-start"}`}>
             <div
-              className={`max-w-[80%] rounded-lg p-3 ${
-                message.sender === "user" ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-800"
-              }`}
+              className={`${
+                message.sender === "user"
+                  ? "max-w-[80%] bg-blue-600 text-white"
+                  : "max-w-[85%] bg-gray-100 text-gray-800"
+              } rounded-lg p-3 inline-block`}
             >
               <p className="whitespace-pre-wrap">{message.content}</p>
 
