@@ -145,7 +145,7 @@ export default function SportsChat() {
                 message.sender === "user"
                   ? "max-w-[80%] bg-blue-600 text-white"
                   : "max-w-[85%] bg-gray-100 text-gray-800"
-              } rounded-lg p-3 inline-block`}
+              } rounded-lg p-3 w-fit`}
             >
               <p className="whitespace-pre-wrap">{message.content}</p>
 
